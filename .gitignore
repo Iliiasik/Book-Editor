@@ -1,0 +1,18 @@
+.idea
+.gradle/
+build/
+out/
+*.iml
+.idea/
+*.log
+*.tmp
+*.class
+*.jar
+*.bat
+*.swp
+.DS_Store
+Thumbs.db
+
+# Minecraft mod specific
+run/
+logs/
