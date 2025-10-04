@@ -4,11 +4,69 @@ import bookeditor.client.editor.caret.CaretSelectionModel;
 import bookeditor.client.editor.page.PageNormalizer;
 import bookeditor.data.BookData;
 
-
 public class TextEditOps {
 
+    private static int nodeLength(BookData.Node n) {
+        if (n instanceof BookData.TextNode t) {
+            return t.text != null ? t.text.length() : 0;
+        }
+        return 1;
+    }
+
+    private static int caretToIndex(BookData.Page page, CaretSelectionModel caret) {
+        int idx = 0;
+        int cNode = Math.max(0, Math.min(caret.getCaretNode(), Math.max(0, page.nodes.size() - 1)));
+        for (int i = 0; i < cNode; i++) idx += nodeLength(page.nodes.get(i));
+        int off = 0;
+        if (!page.nodes.isEmpty()) {
+            int len = nodeLength(page.nodes.get(cNode));
+            off = Math.max(0, Math.min(caret.getCaretOffset(), len));
+        }
+        idx += off;
+        return idx;
+    }
+
+    private static int pairToIndex(BookData.Page page, int node, int off) {
+        int idx = 0;
+        int n = Math.max(0, Math.min(node, Math.max(0, page.nodes.size() - 1)));
+        for (int i = 0; i < n; i++) idx += nodeLength(page.nodes.get(i));
+        int len = page.nodes.isEmpty() ? 0 : nodeLength(page.nodes.get(n));
+        idx += Math.max(0, Math.min(off, len));
+        return idx;
+    }
+
+    private static void setCaretByIndex(BookData.Page page, CaretSelectionModel caret, int index) {
+        int total = 0;
+        for (int i = 0; i < page.nodes.size(); i++) total += nodeLength(page.nodes.get(i));
+        int idx = Math.max(0, Math.min(index, total));
+
+        int run = 0;
+        for (int i = 0; i < page.nodes.size(); i++) {
+            int len = nodeLength(page.nodes.get(i));
+            if (idx <= run + len) {
+                int off = idx - run;
+                if (!(page.nodes.get(i) instanceof BookData.TextNode)) {
+                    off = Math.max(0, Math.min(off, 1));
+                }
+                caret.setCaret(i, off);
+                return;
+            }
+            run += len;
+        }
+        if (page.nodes.isEmpty()) {
+            caret.setCaret(0, 0);
+        } else {
+            int last = page.nodes.size() - 1;
+            caret.setCaret(last, nodeLength(page.nodes.get(last)));
+        }
+    }
+
     public void insertChar(BookData.Page page, CaretSelectionModel caret, StyleParams style, char chr) {
+        if (page == null) return;
         if (chr == '\r') chr = '\n';
+
+        int beforeIdx = caretToIndex(page, caret);
+
         if (page.nodes.isEmpty()) {
             page.nodes.add(new BookData.TextNode("", style.bold, style.italic, style.underline, style.argb, style.size, BookData.ALIGN_LEFT));
             caret.setCaret(0, 0);
@@ -38,18 +96,28 @@ public class TextEditOps {
             int insertIndex = caret.getCaretNode() + (caret.getCaretOffset() > 0 ? 1 : 0);
             BookData.TextNode mid = new BookData.TextNode("", style.bold, style.italic, style.underline, style.argb, style.size, BookData.ALIGN_LEFT);
             mid.text = String.valueOf(chr);
+            insertIndex = Math.max(0, Math.min(insertIndex, page.nodes.size()));
             page.nodes.add(insertIndex, mid);
             caret.setCaret(insertIndex, 1);
         }
 
         caret.clearSelection();
+
+        int afterIdx = beforeIdx + 1;
         PageNormalizer.normalize(page, style);
+        setCaretByIndex(page, caret, afterIdx);
     }
 
     public void deleteSelection(BookData.Page page, CaretSelectionModel caret, StyleParams style) {
+        if (page == null) return;
         if (!caret.hasSelection()) return;
+
         int[] st = caret.selectionStart();
         int[] en = caret.selectionEnd();
+        int sIdx = pairToIndex(page, st[0], st[1]);
+        int eIdx = pairToIndex(page, en[0], en[1]);
+        int startIdx = Math.min(sIdx, eIdx);
+
         int sN = st[0], sO = st[1];
         int eN = en[0], eO = en[1];
 
@@ -80,20 +148,25 @@ public class TextEditOps {
             }
         }
         caret.clearSelection();
+
         PageNormalizer.normalize(page, style);
+        setCaretByIndex(page, caret, startIdx);
     }
 
     public void backspace(BookData.Page page, CaretSelectionModel caret, StyleParams style) {
+        if (page == null) return;
+
+        int beforeIdx = caretToIndex(page, caret);
         if (page.nodes.isEmpty()) {
             page.nodes.add(new BookData.TextNode("", style.bold, style.italic, style.underline, style.argb, style.size, BookData.ALIGN_LEFT));
-            caret.setCaret(0,0); return;
+            caret.setCaret(0,0);
+            return;
         }
         var n = page.nodes.get(caret.getCaretNode());
         if (n instanceof BookData.TextNode tn) {
             if (caret.getCaretOffset() > 0 && caret.getCaretOffset() <= tn.text.length()) {
                 tn.text = tn.text.substring(0, caret.getCaretOffset() - 1) + tn.text.substring(caret.getCaretOffset());
                 caret.setCaret(caret.getCaretNode(), Math.max(0, caret.getCaretOffset() - 1));
-                PageNormalizer.normalize(page, style);
             } else if (caret.getCaretOffset() == 0 && caret.getCaretNode() > 0) {
                 var prev = page.nodes.get(caret.getCaretNode() - 1);
                 if (prev instanceof BookData.TextNode pt) {
@@ -111,19 +184,25 @@ public class TextEditOps {
                             caret.setCaret(caret.getCaretNode() - 1, 0);
                         }
                     }
-                    PageNormalizer.normalize(page, style);
                 }
             }
         }
+
+        PageNormalizer.normalize(page, style);
+        int afterIdx = Math.max(0, beforeIdx - 1);
+        setCaretByIndex(page, caret, afterIdx);
     }
 
     public void deleteForward(BookData.Page page, CaretSelectionModel caret, StyleParams style) {
+        if (page == null) return;
+
+        int beforeIdx = caretToIndex(page, caret);
         if (page.nodes.isEmpty()) return;
+
         var n = page.nodes.get(caret.getCaretNode());
         if (n instanceof BookData.TextNode tn) {
             if (caret.getCaretOffset() < tn.text.length()) {
                 tn.text = tn.text.substring(0, caret.getCaretOffset()) + tn.text.substring(caret.getCaretOffset() + 1);
-                PageNormalizer.normalize(page, style);
             } else if (caret.getCaretNode() < page.nodes.size() - 1) {
                 var next = page.nodes.get(caret.getCaretNode() + 1);
                 if (next instanceof BookData.TextNode nt) {
@@ -135,9 +214,11 @@ public class TextEditOps {
                     } else {
                         page.nodes.remove(caret.getCaretNode() + 1);
                     }
-                    PageNormalizer.normalize(page, style);
                 }
             }
         }
+
+        PageNormalizer.normalize(page, style);
+        setCaretByIndex(page, caret, beforeIdx);
     }
 }
