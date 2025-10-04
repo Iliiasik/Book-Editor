@@ -1,7 +1,7 @@
 {
   "item.bookeditor.creative_book": "Творческая книга",
   "bookeditor.default_title": "Творческая книга",
-  "bookeditor.default_page": "Добро пожаловать! Используйте панель для форматирования, вставки/масштабирования/переноса изображений с абсолютным позиционированием, выравнивания текста и рисования. Поддерживаются Отмена/Повтор.",
+  "bookeditor.default_page": "Добро пожаловать! Используйте панель инструментов для форматирования текста, вставки/масштабирования/перемещения изображений с абсолютным позиционированием, выравнивания текста и рисования на холсте. Поддерживаются Undo/Redo.",
   "screen.bookeditor.title": "Творческая книга",
   "screen.bookeditor.book_title": "Заголовок",
   "screen.bookeditor.img": "Картинка",
@@ -16,5 +16,10 @@
   "screen.bookeditor.apply": "Ок",
   "screen.bookeditor.brush": "Кисть",
   "screen.bookeditor.brush_on": "Кисть*",
-  "screen.bookeditor.brush_size": "Кисть"
+  "screen.bookeditor.brush_size": "Кисть",
+  "screen.bookeditor.image_gif": "Вставить GIF",
+  "screen.bookeditor.image": "Вставить изображение",
+  "screen.bookeditor.url_placeholder": "Ссылка (URL)",
+  "screen.bookeditor.cancel": "Отмена",
+  "screen.bookeditor.add": "Добавить"
 }

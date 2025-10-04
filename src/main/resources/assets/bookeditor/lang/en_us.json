@@ -16,5 +16,10 @@
   "screen.bookeditor.apply": "Apply",
   "screen.bookeditor.brush": "Brush",
   "screen.bookeditor.brush_on": "Brush*",
-  "screen.bookeditor.brush_size": "Brush"
+  "screen.bookeditor.brush_size": "Brush",
+  "screen.bookeditor.image_gif": "Insert GIF",
+  "screen.bookeditor.image": "Insert Image",
+  "screen.bookeditor.url_placeholder": "URL",
+  "screen.bookeditor.cancel": "Cancel",
+  "screen.bookeditor.add": "Add"
 }
