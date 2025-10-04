@@ -1,0 +1,20 @@
+{
+  "item.bookeditor.creative_book": "Creative Book",
+  "bookeditor.default_title": "Creative Book",
+  "bookeditor.default_page": "Welcome! Use the toolbar to format text, insert/resize/move images with absolute position, align text and draw on the canvas. Undo/Redo supported.",
+  "screen.bookeditor.title": "Creative Book",
+  "screen.bookeditor.book_title": "Title",
+  "screen.bookeditor.img": "Image",
+  "screen.bookeditor.color": "Color",
+  "screen.bookeditor.size": "Size",
+  "screen.bookeditor.apply_size": "Apply",
+  "screen.bookeditor.goto": "Page",
+  "screen.bookeditor.go": "Go",
+  "screen.bookeditor.new_page": "New Page",
+  "screen.bookeditor.delete_page": "Delete",
+  "screen.bookeditor.sign": "Sign",
+  "screen.bookeditor.apply": "Apply",
+  "screen.bookeditor.brush": "Brush",
+  "screen.bookeditor.brush_on": "Brush*",
+  "screen.bookeditor.brush_size": "Brush"
+}

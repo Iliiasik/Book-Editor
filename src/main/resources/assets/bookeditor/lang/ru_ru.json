@@ -1,0 +1,20 @@
+{
+  "item.bookeditor.creative_book": "Творческая книга",
+  "bookeditor.default_title": "Творческая книга",
+  "bookeditor.default_page": "Добро пожаловать! Используйте панель для форматирования, вставки/масштабирования/переноса изображений с абсолютным позиционированием, выравнивания текста и рисования. Поддерживаются Отмена/Повтор.",
+  "screen.bookeditor.title": "Творческая книга",
+  "screen.bookeditor.book_title": "Заголовок",
+  "screen.bookeditor.img": "Картинка",
+  "screen.bookeditor.color": "Цвет",
+  "screen.bookeditor.size": "Размер",
+  "screen.bookeditor.apply_size": "Применить",
+  "screen.bookeditor.goto": "Стр.",
+  "screen.bookeditor.go": "Перейти",
+  "screen.bookeditor.new_page": "Новая",
+  "screen.bookeditor.delete_page": "Удалить",
+  "screen.bookeditor.sign": "Подписать",
+  "screen.bookeditor.apply": "Ок",
+  "screen.bookeditor.brush": "Кисть",
+  "screen.bookeditor.brush_on": "Кисть*",
+  "screen.bookeditor.brush_size": "Кисть"
+}

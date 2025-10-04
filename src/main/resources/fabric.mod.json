@@ -3,11 +3,10 @@
   "id": "bookeditor",
   "version": "${version}",
   "name": "BookEditor",
-  "description": "",
-  "authors": [],
+  "description": "Creative Book with WYSIWYG-like editor, images, TOC and localization.",
+  "authors": ["Iliiasik"],
   "contact": {},
-  "license": "All-Rights-Reserved",
-  "icon": "assets/bookeditor/icon.png",
+  "license": "Apache-2.0",
   "environment": "*",
   "entrypoints": {
     "fabric-datagen": [
@@ -30,6 +29,7 @@
   "depends": {
     "fabricloader": ">=${loader_version}",
     "fabric": "*",
-    "minecraft": "${minecraft_version}"
+    "minecraft": "${minecraft_version}",
+    "fabric-api": "${fabric_version}"
   }
 }
