@@ -1,6 +1,12 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "minecraft:item/writable_book"
-  }
+    "layer0": "bookeditor:item/creative_book"
+  },
+  "overrides": [
+    {
+      "predicate": { "bookeditor:signed": 1.0 },
+      "model": "bookeditor:item/creative_book_signed"
+    }
+  ]
 }
