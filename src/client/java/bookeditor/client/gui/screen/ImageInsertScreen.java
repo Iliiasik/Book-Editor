@@ -1,4 +1,4 @@
-package bookeditor.client.gui;
+package bookeditor.client.gui.screen;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;

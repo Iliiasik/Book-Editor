@@ -1,6 +1,5 @@
 package bookeditor.client.gui.screen;
 
-import bookeditor.client.gui.ImageInsertScreen;
 import bookeditor.client.gui.base.WidgetHost;
 import bookeditor.client.gui.components.CanvasToolbar;
 import bookeditor.client.gui.components.FormattingToolbar;
@@ -23,8 +22,6 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 
 import java.util.Objects;
-
-import static net.minecraft.client.gui.screen.Screen.hasControlDown;
 
 public class WysiwygBookScreen extends Screen implements WidgetHost {
 
@@ -246,11 +243,10 @@ public class WysiwygBookScreen extends Screen implements WidgetHost {
     private void sign() {
         if (data.signed) return;
         if (titleField != null) data.title = titleField.getText();
-        var p = Objects.requireNonNull(MinecraftClient.getInstance().player);
+        var p = java.util.Objects.requireNonNull(net.minecraft.client.MinecraftClient.getInstance().player);
         data.authorName = p.getGameProfile().getName();
         data.authorUuid = p.getUuid();
         data.signed = true;
-        if (data.title != null && !data.title.isEmpty()) stack.setCustomName(Text.literal(data.title));
         applySignedVisibility();
         onDirty();
     }

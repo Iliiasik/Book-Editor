@@ -28,10 +28,6 @@ public class CreativeBookItem extends Item {
 
         if (world.isClient) {
             BookData.ensureDefaults(stack, user);
-            BookData d = BookData.readFrom(stack);
-            if (d.signed && d.title != null && !d.title.isEmpty()) {
-                stack.setCustomName(Text.literal(d.title));
-            }
             Services.CLIENT.openCreativeBook(stack, hand);
         }
 
@@ -39,17 +35,22 @@ public class CreativeBookItem extends Item {
     }
 
     @Override
+    public Text getName(ItemStack stack) {
+        BookData d = BookData.readFrom(stack);
+        if (d.signed && d.title != null && !d.title.isEmpty()) {
+            return Text.literal(d.title);
+        }
+        return super.getName(stack);
+    }
+
+    @Override
     public void appendTooltip(ItemStack stack, World world, List<Text> tooltip, TooltipContext context) {
         BookData d = BookData.readFrom(stack);
         if (d.signed) {
             if (d.authorName != null && !d.authorName.isEmpty()) {
-                tooltip.add(Text.literal(d.authorName).setStyle(Style.EMPTY.withItalic(true).withColor(Formatting.GRAY)));
+                tooltip.add(Text.literal(d.authorName).setStyle(Style.EMPTY.withItalic(true).withColor(Formatting.BLUE)));
             }
         }
         super.appendTooltip(stack, world, tooltip, context);
-    }
-
-    public static Text getDisplayName() {
-        return Text.translatable("item.bookeditor.creative_book");
     }
 }
