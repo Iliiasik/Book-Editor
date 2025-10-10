@@ -23,10 +23,12 @@ public class CanvasToolbar {
     private final int btnH;
     private final int gap;
 
+    private ButtonWidget textBoxBtn;
     private ButtonWidget imgBtn;
     private ColorPickerButton canvasColorBtn;
     private ButtonWidget brushToggleBtn;
-    private TextFieldWidget brushSizeField; private ButtonWidget brushApplyBtn;
+    private TextFieldWidget brushSizeField;
+    private ButtonWidget brushApplyBtn;
     private ButtonWidget newPageBtn, deletePageBtn;
     private ButtonWidget signBtn;
 
@@ -56,8 +58,15 @@ public class CanvasToolbar {
     public void build(int initialCanvasArgb) {
         int cx = x;
 
+        textBoxBtn = addBtn(Text.translatable("screen.bookeditor.textbox").getString(), b -> {
+            editor.insertTextBox();
+            onDirty.run();
+        }, cx, 60);
+        cx += 60 + gap;
+
         imgBtn = addBtn(Text.translatable("screen.bookeditor.img").getString(),
-                b -> openInsertDialog.run(), cx, 48); cx += 48 + gap;
+                b -> openInsertDialog.run(), cx, 48);
+        cx += 48 + gap;
 
         canvasColorBtn = new ColorPickerButton(cx, y, argb -> {
             onCanvasColorChanged.accept(argb);
@@ -72,23 +81,34 @@ public class CanvasToolbar {
             boolean newState = !editor.isBrushMode();
             editor.setBrushMode(newState);
             brushToggleBtn.setMessage(Text.translatable(newState ? "screen.bookeditor.brush_on" : "screen.bookeditor.brush"));
-        }, cx, 56); cx += 56 + gap;
+        }, cx, 56);
+        cx += 56 + gap;
 
         brushSizeField = new TextFieldWidget(host.getTextRenderer(), cx, y, 36, btnH, Text.translatable("screen.bookeditor.brush_size"));
-        brushSizeField.setText("3"); host.addDrawable(brushSizeField); cx += 36 + gap;
+        brushSizeField.setText("3");
+        host.addDrawable(brushSizeField);
+        cx += 36 + gap;
+
         brushApplyBtn = addBtn(Text.translatable("screen.bookeditor.apply").getString(), b -> {
             try {
                 int px = Math.max(1, Math.min(32, Integer.parseInt(brushSizeField.getText().trim())));
                 editor.setBrushSize(px);
-            } catch (Exception ignored) {}
-        }, cx, 40); cx += 40 + gap;
+            } catch (Exception ignored) {
+            }
+        }, cx, 40);
+        cx += 40 + gap;
 
-        newPageBtn = addBtn(Text.translatable("screen.bookeditor.new_page").getString(), b -> createNewPage.run(), cx, 56); cx += 56 + gap;
-        deletePageBtn = addBtn(Text.translatable("screen.bookeditor.delete_page").getString(), b -> deleteCurrentPage.run(), cx, 56); cx += 56 + gap;
+        newPageBtn = addBtn(Text.translatable("screen.bookeditor.new_page").getString(), b -> createNewPage.run(), cx, 56);
+        cx += 56 + gap;
+
+        deletePageBtn = addBtn(Text.translatable("screen.bookeditor.delete_page").getString(), b -> deleteCurrentPage.run(), cx, 56);
+        cx += 56 + gap;
+
         signBtn = addBtn(Text.translatable("screen.bookeditor.sign").getString(), b -> signAction.run(), cx, 56);
     }
 
     public void setVisible(boolean v, boolean signed) {
+        if (textBoxBtn != null) textBoxBtn.visible = v;
         if (imgBtn != null) imgBtn.visible = v;
         if (canvasColorBtn != null) canvasColorBtn.visible = v;
         if (brushToggleBtn != null) brushToggleBtn.visible = v;

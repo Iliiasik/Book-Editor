@@ -3,15 +3,15 @@ package bookeditor.client.gui.widget;
 import bookeditor.client.editor.brush.BrushTool;
 import bookeditor.client.editor.history.HistoryManager;
 import bookeditor.client.editor.image.ImageInteraction;
+import bookeditor.client.editor.input.EditorInputHandler;
+import bookeditor.client.editor.input.EditorMouseHandler;
 import bookeditor.client.editor.mode.EditorMode;
-import bookeditor.client.editor.render.CaretPainter;
-import bookeditor.client.editor.render.ImageRenderer;
+import bookeditor.client.editor.render.EditorRenderer;
 import bookeditor.client.editor.text.StyleParams;
 import bookeditor.client.editor.textbox.TextBoxCaret;
 import bookeditor.client.editor.textbox.TextBoxEditOps;
 import bookeditor.client.editor.textbox.TextBoxInteraction;
 import bookeditor.client.editor.textbox.TextBoxRenderer;
-import bookeditor.client.util.ImageCache;
 import bookeditor.data.BookData;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
@@ -20,13 +20,12 @@ import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
-import static net.minecraft.client.gui.screen.Screen.hasControlDown;
-
 public class RichTextEditorWidget extends ClickableWidget {
     private static final int PAD_OUT = 8;
     private static final int PAD_IN = 8;
     private static final int LOGICAL_W = 960;
     private static final int LOGICAL_H = 600;
+    private static final int MAX_TEXTBOX_CHARS = 5000;
 
     private final TextRenderer textRenderer;
     private final java.util.function.Consumer<String> onImageUrlSeen;
@@ -34,7 +33,6 @@ public class RichTextEditorWidget extends ClickableWidget {
 
     private boolean editable;
     private BookData.Page page;
-
     private EditorMode mode = EditorMode.OBJECT_MODE;
 
     private boolean bold;
@@ -50,13 +48,12 @@ public class RichTextEditorWidget extends ClickableWidget {
     private final HistoryManager history = new HistoryManager();
 
     private final TextBoxRenderer textBoxRenderer = new TextBoxRenderer();
-    private final ImageRenderer imageRenderer = new ImageRenderer();
-    private final CaretPainter caretPainter = new CaretPainter();
     private final TextBoxEditOps textBoxOps = new TextBoxEditOps();
+    private final EditorRenderer editorRenderer = new EditorRenderer();
+    private final EditorInputHandler inputHandler = new EditorInputHandler();
+    private final EditorMouseHandler mouseHandler = new EditorMouseHandler();
 
     private int scrollY = 0;
-    private int clickCount = 0;
-    private long lastClickTime = 0;
 
     public RichTextEditorWidget(TextRenderer textRenderer, int x, int y, int width, int height,
                                 boolean editable, java.util.function.Consumer<String> onImageUrlSeen, Runnable onDirty) {
@@ -70,7 +67,6 @@ public class RichTextEditorWidget extends ClickableWidget {
 
     public void setHeight(int height) {
         this.height = Math.max(40, height);
-        clampScroll();
     }
 
     public void setBounds(int x, int y, int width, int height) {
@@ -78,7 +74,6 @@ public class RichTextEditorWidget extends ClickableWidget {
         this.setY(y);
         this.setWidth(width);
         this.height = Math.max(40, height);
-        clampScroll();
     }
 
     private int innerLeft() {
@@ -142,7 +137,6 @@ public class RichTextEditorWidget extends ClickableWidget {
         }
         history.clear();
         pushSnapshot();
-        caretPainter.reset();
     }
 
     public void markSnapshot() {
@@ -150,15 +144,11 @@ public class RichTextEditorWidget extends ClickableWidget {
     }
 
     public boolean undo() {
-        boolean applied = history.undo(this::applySnapshot);
-        if (applied) caretPainter.reset();
-        return applied;
+        return history.undo(this::applySnapshot);
     }
 
     public boolean redo() {
-        boolean applied = history.redo(this::applySnapshot);
-        if (applied) caretPainter.reset();
-        return applied;
+        return history.redo(this::applySnapshot);
     }
 
     private void pushSnapshot() {
@@ -188,7 +178,6 @@ public class RichTextEditorWidget extends ClickableWidget {
                 }
             }
         }
-        clampScroll();
     }
 
     private void notifyDirty() {
@@ -296,10 +285,22 @@ public class RichTextEditorWidget extends ClickableWidget {
 
     @Override
     protected void renderButton(DrawContext ctx, int mouseX, int mouseY, float delta) {
+        renderFrame(ctx);
+        renderCanvas(ctx);
+        enableScissor(ctx);
+        editorRenderer.render(ctx, page, mode, brushTool, imageInteraction, textBoxInteraction, textBoxCaret,
+                textRenderer, this.isFocused(), editable, contentScreenLeft(), contentScreenTop(),
+                canvasScreenTop(), scale(), scrollY, LOGICAL_W, LOGICAL_H);
+        ctx.disableScissor();
+    }
+
+    private void renderFrame(DrawContext ctx) {
         int frame = isHovered() ? 0xFFAAAAAA : 0xFFBEBEBE;
         ctx.fill(getX() - 1, getY() - 1, getX() + getWidth() + 1, getY() + getHeight() + 1, frame);
         ctx.fill(getX(), getY(), getX() + getWidth(), getY() + getHeight(), 0xFFEFEFEF);
+    }
 
+    private void renderCanvas(DrawContext ctx) {
         int cLeft = canvasScreenLeft();
         int cTop = canvasScreenTop();
         int scaledW = (int) Math.floor(scale() * (LOGICAL_W + PAD_IN * 2));
@@ -310,71 +311,22 @@ public class RichTextEditorWidget extends ClickableWidget {
         ctx.fill(cLeft - 1, cTop + scaledH, cLeft + scaledW + 1, cTop + scaledH + 1, 0x33000000);
         ctx.fill(cLeft - 1, cTop, cLeft, cTop + scaledH, 0x33000000);
         ctx.fill(cLeft + scaledW, cTop, cLeft + scaledW + 1, cTop + scaledH, 0x33000000);
+    }
 
+    private void enableScissor(DrawContext ctx) {
+        int cLeft = canvasScreenLeft();
+        int cTop = canvasScreenTop();
+        int scaledW = (int) Math.floor(scale() * (LOGICAL_W + PAD_IN * 2));
+        int scaledH = (int) Math.floor(scale() * (LOGICAL_H + PAD_IN * 2));
         int scLeft = Math.max(innerLeft(), cLeft);
         int scTop = Math.max(innerTop(), cTop);
         int scRight = Math.min(innerLeft() + innerW(), cLeft + scaledW);
         int scBottom = Math.min(innerTop() + innerH(), cTop + scaledH);
         if (scRight > scLeft && scBottom > scTop) ctx.enableScissor(scLeft, scTop, scRight, scBottom);
-
-        int startScreenX = contentScreenLeft();
-        int startScreenY = contentScreenTop();
-        double s = scale();
-
-        brushTool.renderStrokes(ctx, page, startScreenX, startScreenY, s, scrollY);
-
-        imageInteraction.beginFrame();
-        textBoxInteraction.beginFrame();
-
-        if (page != null) {
-            for (int i = 0; i < page.nodes.size(); i++) {
-                BookData.Node node = page.nodes.get(i);
-
-                if (node instanceof BookData.TextBoxNode box) {
-                    int boxScreenX = startScreenX + (int) Math.round(s * box.x);
-                    int boxScreenY = startScreenY + (int) Math.round(s * (box.y - scrollY));
-                    int boxScreenW = (int) Math.round(s * box.width);
-                    int boxScreenH = (int) Math.round(s * box.height);
-
-                    ctx.fill(boxScreenX, boxScreenY, boxScreenX + boxScreenW, boxScreenY + boxScreenH, 0x0FFFFFFF);
-
-                    boolean isSelected = textBoxInteraction.getSelectedTextBoxIndex() == i;
-                    boolean showCaret = isSelected && mode == EditorMode.TEXT_MODE && textBoxInteraction.isEditingText();
-                    boolean showSelection = isSelected && mode == EditorMode.TEXT_MODE;
-
-                    TextBoxRenderer.CaretPosition caretPos = textBoxRenderer.render(
-                            ctx, textRenderer, box, textBoxCaret,
-                            boxScreenX, boxScreenY, s, showCaret, showSelection
-                    );
-
-                    if (showCaret) {
-                        int caretScreenX = boxScreenX + (int) Math.round(s * caretPos.x);
-                        int caretScreenY = boxScreenY + (int) Math.round(s * caretPos.y);
-                        int caretH = (int) Math.round(s * textRenderer.fontHeight * 1.2f);
-                        caretPainter.renderCaret(ctx, this.isFocused(), editable, false, textBoxCaret.hasSelection(),
-                                caretPos.x, caretPos.y, boxScreenX, boxScreenY, s, textRenderer.fontHeight);
-                    }
-
-                    textBoxInteraction.addTextBoxRect(boxScreenX, boxScreenY, boxScreenW, boxScreenH, i);
-                }
-            }
-        }
-
-        imageRenderer.render(ctx, page, imageInteraction, startScreenX, startScreenY - (int) Math.round(s * scrollY), canvasScreenTop(), s, LOGICAL_W, LOGICAL_H);
-
-        imageInteraction.renderSelectionHandles(ctx);
-        textBoxInteraction.renderSelectionHandles(ctx);
-
-        ctx.disableScissor();
-    }
-
-    private void clampScroll() {
-        scrollY = 0;
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
-        clampScroll();
         return true;
     }
 
@@ -383,118 +335,17 @@ public class RichTextEditorWidget extends ClickableWidget {
         if (!this.isMouseOver(mouseX, mouseY)) return false;
         this.setFocused(true);
 
-        int mx = (int) mouseX;
-        int my = (int) mouseY;
-
-        long currentTime = System.currentTimeMillis();
-        if (currentTime - lastClickTime < 500) {
-            clickCount++;
-        } else {
-            clickCount = 1;
-        }
-        lastClickTime = currentTime;
-
-        if (brushTool.beginStrokeIfNeeded(editable, page, mx, my, contentScreenLeft(), contentScreenTop(), scale(), scrollY)) {
-            pushSnapshotOnce();
-            mode = EditorMode.OBJECT_MODE;
-            return true;
-        }
-
-        if (mode == EditorMode.TEXT_MODE && textBoxInteraction.isEditingText()) {
-            int selectedIdx = textBoxInteraction.getSelectedTextBoxIndex();
-            if (selectedIdx >= 0 && selectedIdx < page.nodes.size()) {
-                var node = page.nodes.get(selectedIdx);
-                if (node instanceof BookData.TextBoxNode box) {
-                    int boxScreenX = contentScreenLeft() + (int) Math.round(scale() * box.x);
-                    int boxScreenY = contentScreenTop() + (int) Math.round(scale() * (box.y - scrollY));
-                    int boxScreenW = (int) Math.round(scale() * box.width);
-                    int boxScreenH = (int) Math.round(scale() * box.height);
-
-                    if (mx >= boxScreenX && mx <= boxScreenX + boxScreenW &&
-                            my >= boxScreenY && my <= boxScreenY + boxScreenH) {
-                        int localX = (int) Math.round((mx - boxScreenX) / scale());
-                        int localY = (int) Math.round((my - boxScreenY) / scale());
-                        int charIdx = textBoxRenderer.getCharIndexAtPosition(textRenderer, box, localX, localY);
-                        textBoxCaret.setCharIndex(charIdx);
-                        textBoxCaret.clearSelection();
-                        return true;
-                    }
-                }
-            }
-            mode = EditorMode.OBJECT_MODE;
-            textBoxInteraction.setEditingText(false);
-            textBoxCaret.clearSelection();
-        }
-
-        imageInteraction.clearSelection();
-        textBoxInteraction.clearSelection();
-
-        if (imageInteraction.mouseClicked(mx, my, editable, this::pushSnapshotOnce, page)) {
-            mode = EditorMode.OBJECT_MODE;
-            return true;
-        }
-
-        if (textBoxInteraction.mouseClicked(mx, my, editable, this::pushSnapshotOnce, page)) {
-            mode = EditorMode.OBJECT_MODE;
-            if (clickCount >= 2 && editable) {
-                int selectedIdx = textBoxInteraction.getSelectedTextBoxIndex();
-                if (selectedIdx >= 0 && selectedIdx < page.nodes.size()) {
-                    var node = page.nodes.get(selectedIdx);
-                    if (node instanceof BookData.TextBoxNode box) {
-                        mode = EditorMode.TEXT_MODE;
-                        textBoxInteraction.setEditingText(true);
-                        textBoxCaret.reset();
-                        textBoxCaret.ensureWithinBounds(box);
-                    }
-                }
-            }
-            return true;
-        }
-
+        mode = mouseHandler.handleMouseClick((int) mouseX, (int) mouseY, editable, page, mode,
+                brushTool, imageInteraction, textBoxInteraction, textBoxCaret, textBoxRenderer,
+                textRenderer, contentScreenLeft(), contentScreenTop(), scale(), scrollY, this::pushSnapshotOnce);
         return true;
     }
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dx, double dy) {
-        if (!editable) return false;
-
-        int mx = (int) mouseX;
-        int my = (int) mouseY;
-
-        if (brushTool.continueStrokeIfActive(mx, my, contentScreenLeft(), contentScreenTop(), scale(), scrollY)) {
-            return true;
-        }
-
-        if (mode == EditorMode.TEXT_MODE && textBoxInteraction.isEditingText()) {
-            int selectedIdx = textBoxInteraction.getSelectedTextBoxIndex();
-            if (selectedIdx >= 0 && selectedIdx < page.nodes.size()) {
-                var node = page.nodes.get(selectedIdx);
-                if (node instanceof BookData.TextBoxNode box) {
-                    int boxScreenX = contentScreenLeft() + (int) Math.round(scale() * box.x);
-                    int boxScreenY = contentScreenTop() + (int) Math.round(scale() * (box.y - scrollY));
-
-                    int localX = (int) Math.round((mx - boxScreenX) / scale());
-                    int localY = (int) Math.round((my - boxScreenY) / scale());
-                    int charIdx = textBoxRenderer.getCharIndexAtPosition(textRenderer, box, localX, localY);
-
-                    if (!textBoxCaret.hasSelection()) {
-                        textBoxCaret.setAnchor(textBoxCaret.getCharIndex());
-                    }
-                    textBoxCaret.setCharIndex(charIdx);
-                    return true;
-                }
-            }
-        }
-
-        if (imageInteraction.mouseDragged(mx, my, true, scale(), page)) {
-            return true;
-        }
-
-        if (textBoxInteraction.mouseDragged(mx, my, true, scale(), page)) {
-            return true;
-        }
-
-        return true;
+        return mouseHandler.handleMouseDrag((int) mouseX, (int) mouseY, mode, editable, brushTool,
+                imageInteraction, textBoxInteraction, textBoxCaret, textBoxRenderer, textRenderer,
+                page, contentScreenLeft(), contentScreenTop(), scale(), scrollY);
     }
 
     @Override
@@ -510,22 +361,22 @@ public class RichTextEditorWidget extends ClickableWidget {
     @Override
     public boolean charTyped(char chr, int modifiers) {
         if (!editable || page == null || !this.isFocused()) return false;
-        if (mode != EditorMode.TEXT_MODE || !textBoxInteraction.isEditingText()) return false;
         if (brushTool.isBrushMode()) return false;
 
         int selectedIdx = textBoxInteraction.getSelectedTextBoxIndex();
-        if (selectedIdx < 0 || selectedIdx >= page.nodes.size()) return false;
-
-        var node = page.nodes.get(selectedIdx);
-        if (!(node instanceof BookData.TextBoxNode box)) return false;
-
-        if (chr == '\r') chr = '\n';
-        if (chr < 32 && chr != '\n' && chr != '\t') return false;
+        if (selectedIdx >= 0 && selectedIdx < page.nodes.size()) {
+            var node = page.nodes.get(selectedIdx);
+            if (node instanceof BookData.TextBoxNode box) {
+                if (box.getFullText().length() >= MAX_TEXTBOX_CHARS) {
+                    return false;
+                }
+            }
+        }
 
         pushSnapshotOnce();
-        textBoxOps.insertChar(box, textBoxCaret, style(), chr);
-        notifyDirty();
-        return true;
+        boolean handled = inputHandler.handleCharTyped(mode, page, textBoxInteraction, textBoxCaret, style(), chr);
+        if (handled) notifyDirty();
+        return handled;
     }
 
     @Override
@@ -558,59 +409,10 @@ public class RichTextEditorWidget extends ClickableWidget {
 
         if (!editable || page == null || brushTool.isBrushMode()) return false;
 
-        if (mode == EditorMode.TEXT_MODE && textBoxInteraction.isEditingText()) {
-            int selectedIdx = textBoxInteraction.getSelectedTextBoxIndex();
-            if (selectedIdx < 0 || selectedIdx >= page.nodes.size()) return false;
-            var node = page.nodes.get(selectedIdx);
-            if (!(node instanceof BookData.TextBoxNode box)) return false;
-
-            boolean ctrl = hasControlDown();
-            if (ctrl && keyCode == GLFW.GLFW_KEY_A) {
-                textBoxCaret.selectAll(box);
-                return true;
-            }
-
-            if (keyCode == GLFW.GLFW_KEY_BACKSPACE) {
-                pushSnapshotOnce();
-                textBoxOps.backspace(box, textBoxCaret);
-                notifyDirty();
-                return true;
-            } else if (keyCode == GLFW.GLFW_KEY_DELETE) {
-                pushSnapshotOnce();
-                textBoxOps.deleteForward(box, textBoxCaret);
-                notifyDirty();
-                return true;
-            } else if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
-                pushSnapshotOnce();
-                textBoxOps.insertChar(box, textBoxCaret, style(), '\n');
-                notifyDirty();
-                return true;
-            } else if (keyCode == GLFW.GLFW_KEY_LEFT) {
-                if ((modifiers & GLFW.GLFW_MOD_SHIFT) != 0) {
-                    if (!textBoxCaret.hasSelection()) {
-                        textBoxCaret.setAnchor(textBoxCaret.getCharIndex());
-                    }
-                    textBoxCaret.moveLeft(box);
-                } else {
-                    textBoxCaret.moveLeft(box);
-                    textBoxCaret.clearSelection();
-                }
-                return true;
-            } else if (keyCode == GLFW.GLFW_KEY_RIGHT) {
-                if ((modifiers & GLFW.GLFW_MOD_SHIFT) != 0) {
-                    if (!textBoxCaret.hasSelection()) {
-                        textBoxCaret.setAnchor(textBoxCaret.getCharIndex());
-                    }
-                    textBoxCaret.moveRight(box);
-                } else {
-                    textBoxCaret.moveRight(box);
-                    textBoxCaret.clearSelection();
-                }
-                return true;
-            }
-        }
-
-        return false;
+        pushSnapshotOnce();
+        boolean handled = inputHandler.handleKeyPressed(mode, page, textBoxInteraction, textBoxCaret, keyCode, modifiers);
+        if (handled) notifyDirty();
+        return handled;
     }
 
     @Override
