@@ -140,6 +140,7 @@ public class BookData {
         public int y;
         public int width;
         public int height;
+        public int bgArgb = 0x00FFFFFF;
         public final List<TextSegment> segments = new ArrayList<>();
 
         public TextBoxNode(int x, int y, int width, int height) {
@@ -159,6 +160,7 @@ public class BookData {
             c.putInt("y", y);
             c.putInt("w", width);
             c.putInt("h", height);
+            c.putInt("bgArgb", bgArgb);
 
             NbtList segList = new NbtList();
             for (TextSegment seg : segments) segList.add(seg.toNbt());
@@ -174,6 +176,8 @@ public class BookData {
                     c.getInt("w"),
                     c.getInt("h")
             );
+
+            box.bgArgb = c.contains("bgArgb", NbtElement.INT_TYPE) ? c.getInt("bgArgb") : 0x00FFFFFF;
 
             if (c.contains("segments", NbtElement.LIST_TYPE)) {
                 NbtList segList = c.getList("segments", NbtElement.COMPOUND_TYPE);

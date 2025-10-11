@@ -1,6 +1,5 @@
 package bookeditor.client.editor.input;
 
-import bookeditor.client.editor.brush.BrushTool;
 import bookeditor.client.editor.image.ImageInteraction;
 import bookeditor.client.editor.mode.EditorMode;
 import bookeditor.client.editor.textbox.TextBoxCaret;
@@ -14,7 +13,7 @@ public class EditorMouseHandler {
     private long lastClickTime = 0;
 
     public EditorMode handleMouseClick(int mx, int my, boolean editable, BookData.Page page,
-                                       EditorMode currentMode, BrushTool brushTool, ImageInteraction imageInteraction,
+                                       EditorMode currentMode, ImageInteraction imageInteraction,
                                        TextBoxInteraction textBoxInteraction, TextBoxCaret textBoxCaret,
                                        TextBoxRenderer textBoxRenderer, TextRenderer textRenderer,
                                        int contentScreenLeft, int contentScreenTop, double scale, int scrollY,
@@ -27,11 +26,6 @@ public class EditorMouseHandler {
             clickCount = 1;
         }
         lastClickTime = currentTime;
-
-        if (brushTool.beginStrokeIfNeeded(editable, page, mx, my, contentScreenLeft, contentScreenTop, scale, scrollY)) {
-            pushSnapshot.run();
-            return EditorMode.OBJECT_MODE;
-        }
 
         if (currentMode == EditorMode.TEXT_MODE && textBoxInteraction.isEditingText()) {
             int selectedIdx = textBoxInteraction.getSelectedTextBoxIndex();
@@ -86,16 +80,12 @@ public class EditorMouseHandler {
     }
 
     public boolean handleMouseDrag(int mx, int my, EditorMode mode, boolean editable,
-                                   BrushTool brushTool, ImageInteraction imageInteraction,
+                                   ImageInteraction imageInteraction,
                                    TextBoxInteraction textBoxInteraction, TextBoxCaret textBoxCaret,
                                    TextBoxRenderer textBoxRenderer, TextRenderer textRenderer, BookData.Page page,
                                    int contentScreenLeft, int contentScreenTop, double scale, int scrollY) {
 
         if (!editable) return false;
-
-        if (brushTool.continueStrokeIfActive(mx, my, contentScreenLeft, contentScreenTop, scale, scrollY)) {
-            return true;
-        }
 
         if (mode == EditorMode.TEXT_MODE && textBoxInteraction.isEditingText()) {
             int selectedIdx = textBoxInteraction.getSelectedTextBoxIndex();

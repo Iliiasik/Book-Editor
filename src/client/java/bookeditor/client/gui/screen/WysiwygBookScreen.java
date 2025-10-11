@@ -142,7 +142,6 @@ public class WysiwygBookScreen extends Screen implements WidgetHost {
         editor.setContent(data.pages.get(page));
         formattingToolbar.setInitialTextColor(0xFF202020);
         canvasToolbar.setCanvasColor(data.pages.get(page).bgArgb);
-        canvasToolbar.setBrushSize(3);
         addDrawableChild(editor);
 
         prefetchPageImages();

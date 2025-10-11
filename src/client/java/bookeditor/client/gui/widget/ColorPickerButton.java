@@ -1,25 +1,23 @@
 package bookeditor.client.gui.widget;
 
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.Drawable;
+import net.minecraft.client.gui.Element;
+import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.screen.narration.NarrationPart;
-import net.minecraft.client.gui.widget.PressableWidget;
+import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.text.Text;
 
-public class ColorPickerButton extends PressableWidget {
+public class ColorPickerButton extends ClickableWidget implements Drawable, Element, Selectable {
+    private final java.util.function.Consumer<Integer> onColorChange;
     private int argb;
 
-    public interface Listener { void onPick(int argb); }
-    private final Listener listener;
-
-    public ColorPickerButton(int x, int y, Listener listener, int initialArgb) {
-        super(x, y, 20, 20, Text.translatable("screen.bookeditor.color"));
-        this.listener = listener;
+    public ColorPickerButton(int x, int y, java.util.function.Consumer<Integer> onColorChange, int initialArgb) {
+        super(x, y, 20, 18, Text.literal(""));
+        this.onColorChange = onColorChange;
         this.argb = initialArgb;
-    }
-
-    public int getArgb() {
-        return argb;
     }
 
     public void setArgb(int argb) {
@@ -27,36 +25,24 @@ public class ColorPickerButton extends PressableWidget {
     }
 
     @Override
-    public void onPress() {
-        int[] palette = {
-                0xFF202020,
-                0xFFFFFFFF,
-                0xFFFF5555,
-                0xFF55FF55,
-                0xFF5555FF,
-                0xFFFFFF55,
-                0xFFFF55FF,
-                0xFF55FFFF
-        };
-        int idx = 0;
-        for (int i = 0; i < palette.length; i++) {
-            if (palette[i] == argb) { idx = i; break; }
-        }
-        idx = (idx + 1) % palette.length;
-        argb = palette[idx];
-        if (listener != null) listener.onPick(argb);
+    protected void renderButton(DrawContext ctx, int mouseX, int mouseY, float delta) {
+        int borderColor = isHovered() ? 0xFF666666 : 0xFF000000;
+
+        ctx.fill(getX() - 1, getY() - 1, getX() + width + 1, getY() + height + 1, borderColor);
+        ctx.fill(getX(), getY(), getX() + width, getY() + height, argb);
     }
 
     @Override
-    protected void renderButton(DrawContext ctx, int mouseX, int mouseY, float delta) {
-        int border = isHovered() ? 0xFFFFFFFF : 0xFFB0B0B0;
-        ctx.fill(getX() - 1, getY() - 1, getX() + getWidth() + 1, getY() + getHeight() + 1, border);
-        ctx.fill(getX(), getY(), getX() + getWidth(), getY() + getHeight(), argb);
+    public void onClick(double mouseX, double mouseY) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        client.setScreen(new ColorPaletteScreen(client.currentScreen, color -> {
+            this.argb = color;
+            onColorChange.accept(color);
+        }, argb));
     }
 
     @Override
     protected void appendClickableNarrations(NarrationMessageBuilder builder) {
-        builder.put(NarrationPart.TITLE, this.getNarrationMessage());
-        this.appendDefaultNarrations(builder);
+        builder.put(NarrationPart.TITLE, Text.translatable("narrator.select.color"));
     }
 }

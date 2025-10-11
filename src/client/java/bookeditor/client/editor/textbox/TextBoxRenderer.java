@@ -21,13 +21,14 @@ public class TextBoxRenderer {
         List<CharInfo> chars = new ArrayList<>();
         int width = 0;
         int align = BookData.ALIGN_LEFT;
+        float maxSize = 1.0f;
     }
 
     private static class CharInfo {
         char ch;
         int width;
         BookData.TextSegment segment;
-        int charIndex;
+        int globalCharIndex;
     }
 
     public CaretPosition render(DrawContext ctx,
@@ -43,10 +44,11 @@ public class TextBoxRenderer {
         CaretPosition caretPos = new CaretPosition();
         caretPos.x = 0;
         caretPos.y = 0;
+        caretPos.textSize = 1.0f;
 
         if (textBox == null) return caretPos;
 
-        int lineHeight = (int) Math.ceil(textRenderer.fontHeight * 1.2f);
+        int baseLineHeight = textRenderer.fontHeight;
         int selStart = showSelection && caret.hasSelection() ? caret.selectionStart() : -1;
         int selEnd = showSelection && caret.hasSelection() ? caret.selectionEnd() : -1;
 
@@ -54,28 +56,45 @@ public class TextBoxRenderer {
 
         List<LineInfo> lines = buildLines(textRenderer, textBox);
         int currentY = 0;
-        int charIndex = 0;
+        boolean caretFound = false;
 
-        for (LineInfo line : lines) {
+        for (int lineIdx = 0; lineIdx < lines.size(); lineIdx++) {
+            LineInfo line = lines.get(lineIdx);
+            int lineHeight = (int) Math.ceil(baseLineHeight * line.maxSize * 1.2f);
+
             if (currentY + lineHeight > textBox.height) break;
 
             int offsetX = calculateAlignOffset(line.align, line.width, textBox.width);
             int currentX = offsetX;
-            CharInfo lastCharInLine = null;
+
+            if (line.chars.isEmpty()) {
+                if (showCaret && !caretFound) {
+                    int totalCharsBeforeLine = getTotalCharsBeforeLine(lines, lineIdx);
+                    if (caret.getCharIndex() == totalCharsBeforeLine) {
+                        caretPos.x = offsetX;
+                        caretPos.y = currentY;
+                        caretPos.textSize = line.maxSize;
+                        caretFound = true;
+                    }
+                }
+                currentY += lineHeight;
+                continue;
+            }
 
             for (CharInfo charInfo : line.chars) {
-                if (showSelection && charIndex >= selStart && charIndex < selEnd) {
-                    int sx = screenX + (int) (currentX * scale);
-                    int sy = screenY + (int) (currentY * scale);
-                    int sw = Math.max(1, (int) (charInfo.width * scale));
-                    int sh = Math.max(1, (int) (lineHeight * scale));
-                    ctx.fill(sx, sy, sx + sw, sy + sh, 0x5533A0FF);
-                }
-
-                if (showCaret && charIndex == caret.getCharIndex()) {
+                if (showCaret && !caretFound && charInfo.globalCharIndex == caret.getCharIndex()) {
                     caretPos.x = currentX;
                     caretPos.y = currentY;
                     caretPos.textSize = charInfo.segment.size;
+                    caretFound = true;
+                }
+
+                if (showSelection && charInfo.globalCharIndex >= selStart && charInfo.globalCharIndex < selEnd) {
+                    int sx = screenX + (int) (currentX * scale);
+                    int sy = screenY + (int) (currentY * scale);
+                    int sw = Math.max(1, (int) (charInfo.width * scale));
+                    int sh = (int) (lineHeight * scale);
+                    ctx.fill(sx, sy, sx + sw, sy + sh, 0x5533A0FF);
                 }
 
                 Style style = Style.EMPTY
@@ -95,24 +114,45 @@ public class TextBoxRenderer {
                 ctx.getMatrices().pop();
 
                 currentX += charInfo.width;
-                lastCharInLine = charInfo;
-                charIndex++;
             }
 
-            if (showCaret && charIndex == caret.getCharIndex()) {
-                caretPos.x = currentX;
-                caretPos.y = currentY;
-                if (lastCharInLine != null) {
-                    caretPos.textSize = lastCharInLine.segment.size;
+            if (!line.chars.isEmpty()) {
+                CharInfo lastChar = line.chars.get(line.chars.size() - 1);
+                if (showCaret && !caretFound && lastChar.globalCharIndex + 1 == caret.getCharIndex()) {
+                    caretPos.x = currentX;
+                    caretPos.y = currentY;
+                    caretPos.textSize = lastChar.segment.size;
+                    caretFound = true;
                 }
             }
 
             currentY += lineHeight;
         }
 
-        if (showCaret && charIndex == caret.getCharIndex()) {
-            caretPos.x = lines.isEmpty() ? 0 : calculateAlignOffset(BookData.ALIGN_LEFT, 0, textBox.width);
-            caretPos.y = currentY;
+        if (showCaret && !caretFound) {
+            int totalChars = getTotalChars(lines);
+            if (caret.getCharIndex() >= totalChars) {
+                if (lines.isEmpty() || (lines.size() == 1 && lines.get(0).chars.isEmpty())) {
+                    caretPos.x = 0;
+                    caretPos.y = 0;
+                    caretPos.textSize = 1.0f;
+                } else {
+                    LineInfo lastLine = lines.get(lines.size() - 1);
+                    int lastLineY = currentY - (int) Math.ceil(baseLineHeight * lastLine.maxSize * 1.2f);
+
+                    if (lastLine.chars.isEmpty()) {
+                        caretPos.x = calculateAlignOffset(lastLine.align, 0, textBox.width);
+                        caretPos.y = lastLineY;
+                        caretPos.textSize = lastLine.maxSize;
+                    } else {
+                        CharInfo lastChar = lastLine.chars.get(lastLine.chars.size() - 1);
+                        int offsetX = calculateAlignOffset(lastLine.align, lastLine.width, textBox.width);
+                        caretPos.x = offsetX + lastLine.width;
+                        caretPos.y = lastLineY;
+                        caretPos.textSize = lastChar.segment.size;
+                    }
+                }
+            }
         }
 
         ctx.disableScissor();
@@ -120,12 +160,59 @@ public class TextBoxRenderer {
         return caretPos;
     }
 
+    private int getTotalChars(List<LineInfo> lines) {
+        int total = 0;
+        for (LineInfo line : lines) {
+            total += line.chars.size();
+        }
+        return total;
+    }
+
+    private int getTotalCharsBeforeLine(List<LineInfo> lines, int lineIndex) {
+        int total = 0;
+        for (int i = 0; i < lineIndex && i < lines.size(); i++) {
+            total += lines.get(i).chars.size();
+        }
+        return total;
+    }
+
     private List<LineInfo> buildLines(TextRenderer textRenderer, BookData.TextBoxNode textBox) {
         List<LineInfo> lines = new ArrayList<>();
+
+        if (textBox.segments.isEmpty()) {
+            LineInfo emptyLine = new LineInfo();
+            emptyLine.maxSize = 1.0f;
+            emptyLine.align = BookData.ALIGN_LEFT;
+            lines.add(emptyLine);
+            return lines;
+        }
+
+        boolean hasAnyText = false;
+        for (BookData.TextSegment seg : textBox.segments) {
+            if (!seg.text.isEmpty()) {
+                hasAnyText = true;
+                break;
+            }
+        }
+
+        if (!hasAnyText) {
+            LineInfo emptyLine = new LineInfo();
+            emptyLine.maxSize = textBox.segments.isEmpty() ? 1.0f : textBox.segments.get(0).size;
+            emptyLine.align = textBox.segments.isEmpty() ? BookData.ALIGN_LEFT : textBox.segments.get(0).align;
+            lines.add(emptyLine);
+            return lines;
+        }
+
         LineInfo currentLine = new LineInfo();
-        int charIndex = 0;
+        int globalCharIndex = 0;
 
         for (BookData.TextSegment seg : textBox.segments) {
+            currentLine.maxSize = Math.max(currentLine.maxSize, seg.size);
+
+            if (seg.text.isEmpty()) {
+                continue;
+            }
+
             for (int i = 0; i < seg.text.length(); i++) {
                 char ch = seg.text.charAt(i);
 
@@ -133,7 +220,8 @@ public class TextBoxRenderer {
                     currentLine.align = seg.align;
                     lines.add(currentLine);
                     currentLine = new LineInfo();
-                    charIndex++;
+                    currentLine.maxSize = seg.size;
+                    globalCharIndex++;
                     continue;
                 }
 
@@ -143,17 +231,19 @@ public class TextBoxRenderer {
                     currentLine.align = seg.align;
                     lines.add(currentLine);
                     currentLine = new LineInfo();
+                    currentLine.maxSize = seg.size;
                 }
 
                 CharInfo charInfo = new CharInfo();
                 charInfo.ch = ch;
                 charInfo.width = charWidth;
                 charInfo.segment = seg;
-                charInfo.charIndex = charIndex;
+                charInfo.globalCharIndex = globalCharIndex;
 
                 currentLine.chars.add(charInfo);
                 currentLine.width += charWidth;
-                charIndex++;
+                currentLine.maxSize = Math.max(currentLine.maxSize, seg.size);
+                globalCharIndex++;
             }
         }
 
@@ -162,6 +252,11 @@ public class TextBoxRenderer {
                 currentLine.align = textBox.segments.get(textBox.segments.size() - 1).align;
             }
             lines.add(currentLine);
+        } else if (lines.isEmpty()) {
+            LineInfo emptyLine = new LineInfo();
+            emptyLine.maxSize = 1.0f;
+            emptyLine.align = BookData.ALIGN_LEFT;
+            lines.add(emptyLine);
         }
 
         return lines;
@@ -181,34 +276,35 @@ public class TextBoxRenderer {
     public int getCharIndexAtPosition(TextRenderer textRenderer, BookData.TextBoxNode textBox, int localX, int localY) {
         if (textBox == null) return 0;
 
-        int lineHeight = (int) Math.ceil(textRenderer.fontHeight * 1.2f);
+        int baseLineHeight = textRenderer.fontHeight;
         List<LineInfo> lines = buildLines(textRenderer, textBox);
         int currentY = 0;
-        int charIndex = 0;
 
-        for (LineInfo line : lines) {
+        for (int lineIdx = 0; lineIdx < lines.size(); lineIdx++) {
+            LineInfo line = lines.get(lineIdx);
+            int lineHeight = (int) Math.ceil(baseLineHeight * line.maxSize * 1.2f);
+
             if (localY >= currentY && localY < currentY + lineHeight) {
                 int offsetX = calculateAlignOffset(line.align, line.width, textBox.width);
                 int currentX = offsetX;
 
+                if (line.chars.isEmpty()) {
+                    return getTotalCharsBeforeLine(lines, lineIdx);
+                }
+
                 for (CharInfo charInfo : line.chars) {
-                    if (localX >= currentX && localX < currentX + charInfo.width) {
-                        if (localX < currentX + charInfo.width / 2) {
-                            return charInfo.charIndex;
-                        } else {
-                            return charInfo.charIndex + 1;
-                        }
+                    if (localX < currentX + charInfo.width / 2) {
+                        return charInfo.globalCharIndex;
                     }
                     currentX += charInfo.width;
                 }
 
-                return charIndex;
+                return line.chars.get(line.chars.size() - 1).globalCharIndex + 1;
             }
 
             currentY += lineHeight;
-            charIndex += line.chars.size();
         }
 
-        return charIndex;
+        return getTotalChars(lines);
     }
 }
