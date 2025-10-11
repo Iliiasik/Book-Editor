@@ -208,6 +208,7 @@ public class BookData {
         public boolean underline;
         public int argb;
         public float size;
+        public int align = ALIGN_LEFT;
 
         public TextSegment(String text, boolean bold, boolean italic, boolean underline, int argb, float size) {
             this.text = text;
@@ -226,11 +227,12 @@ public class BookData {
             c.putBoolean("underline", underline);
             c.putInt("argb", argb);
             c.putFloat("size", size);
+            c.putInt("align", align);
             return c;
         }
 
         public static TextSegment fromNbt(NbtCompound c) {
-            return new TextSegment(
+            TextSegment seg = new TextSegment(
                     c.getString("text"),
                     c.getBoolean("bold"),
                     c.getBoolean("italic"),
@@ -238,10 +240,14 @@ public class BookData {
                     c.getInt("argb"),
                     c.getFloat("size")
             );
+            seg.align = c.contains("align", NbtElement.INT_TYPE) ? clampAlign(c.getInt("align")) : ALIGN_LEFT;
+            return seg;
         }
 
         public TextSegment copy() {
-            return new TextSegment(text, bold, italic, underline, argb, size);
+            TextSegment seg = new TextSegment(text, bold, italic, underline, argb, size);
+            seg.align = align;
+            return seg;
         }
 
         public boolean sameStyle(TextSegment other) {
@@ -249,7 +255,8 @@ public class BookData {
                     this.italic == other.italic &&
                     this.underline == other.underline &&
                     this.argb == other.argb &&
-                    Float.compare(this.size, other.size) == 0;
+                    Float.compare(this.size, other.size) == 0 &&
+                    this.align == other.align;
         }
     }
 

@@ -4,32 +4,30 @@ import net.minecraft.client.gui.DrawContext;
 
 public class CaretPainter {
     private long lastBlink = 0;
-    private boolean blinkOn = true;
-
-    public void renderCaret(DrawContext ctx,
-                            boolean isFocused,
-                            boolean editable,
-                            boolean brushMode,
-                            boolean hasSelection,
-                            int caretLogicalX,
-                            int caretLogicalY,
-                            int startScreenX,
-                            int startScreenY,
-                            double scale,
-                            int fontHeight) {
-        long now = System.currentTimeMillis();
-        if (now - lastBlink > 500) { blinkOn = !blinkOn; lastBlink = now; }
-        if (isFocused && editable && !brushMode && blinkOn && !hasSelection) {
-            int caretW = Math.max(1, (int)Math.round(scale));
-            int caretH = Math.max(1, (int)Math.round(scale * (fontHeight + 2)));
-            int caretSX = startScreenX + (int)Math.round(scale * caretLogicalX);
-            int caretSY = startScreenY + (int)Math.round(scale * caretLogicalY);
-            ctx.fill(caretSX, caretSY, caretSX + caretW, caretSY + caretH, 0xFF000000);
-        }
-    }
+    private boolean visible = true;
+    private static final long BLINK_INTERVAL = 530;
 
     public void reset() {
-        blinkOn = true;
         lastBlink = System.currentTimeMillis();
+        visible = true;
+    }
+
+    public void renderCaret(DrawContext ctx, boolean focused, boolean editable, boolean brushMode,
+                            boolean hasSelection, int caretX, int caretY, int baseScreenX, int baseScreenY,
+                            double scale, int baseFontHeight, float textSize) {
+        if (!focused || !editable || brushMode || hasSelection) return;
+
+        long now = System.currentTimeMillis();
+        if (now - lastBlink > BLINK_INTERVAL) {
+            visible = !visible;
+            lastBlink = now;
+        }
+
+        if (visible) {
+            int sx = baseScreenX + (int) Math.round(scale * caretX);
+            int sy = baseScreenY + (int) Math.round(scale * caretY);
+            int caretHeight = (int) Math.round(scale * baseFontHeight * 1.2f * textSize);
+            ctx.fill(sx, sy, sx + 1, sy + caretHeight, 0xFF000000);
+        }
     }
 }

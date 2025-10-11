@@ -243,6 +243,19 @@ public class RichTextEditorWidget extends ClickableWidget {
     }
 
     public void setAlignment(int align) {
+        if (!editable || page == null || mode != EditorMode.TEXT_MODE) return;
+        if (textBoxInteraction.getSelectedTextBoxIndex() < 0) return;
+
+        var node = page.nodes.get(textBoxInteraction.getSelectedTextBoxIndex());
+        if (!(node instanceof BookData.TextBoxNode box)) return;
+
+        pushSnapshotOnce();
+
+        for (BookData.TextSegment seg : box.segments) {
+            seg.align = align;
+        }
+
+        notifyDirty();
     }
 
     public void insertImage(String url, int w, int h, boolean gif) {

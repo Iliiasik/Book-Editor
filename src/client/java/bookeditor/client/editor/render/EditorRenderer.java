@@ -68,7 +68,7 @@ public class EditorRenderer {
 
         if (showCaret) {
             caretPainter.renderCaret(ctx, isFocused, editable, false, textBoxCaret.hasSelection(),
-                    caretPos.x, caretPos.y, boxScreenX, boxScreenY, scale, textRenderer.fontHeight);
+                    caretPos.x, caretPos.y, boxScreenX, boxScreenY, scale, textRenderer.fontHeight, caretPos.textSize);
         }
 
         textBoxInteraction.addTextBoxRect(boxScreenX, boxScreenY, boxScreenW, boxScreenH, index);
