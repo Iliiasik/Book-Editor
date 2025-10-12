@@ -13,6 +13,8 @@ import net.minecraft.text.Text;
 public class ColorPickerButton extends ClickableWidget implements Drawable, Element, Selectable {
     private final java.util.function.Consumer<Integer> onColorChange;
     private int argb;
+    private float hoverProgress = 0.0f;
+    private long lastFrameTime = System.currentTimeMillis();
 
     public ColorPickerButton(int x, int y, java.util.function.Consumer<Integer> onColorChange, int initialArgb) {
         super(x, y, 20, 18, Text.literal(""));
@@ -26,10 +28,42 @@ public class ColorPickerButton extends ClickableWidget implements Drawable, Elem
 
     @Override
     protected void renderButton(DrawContext ctx, int mouseX, int mouseY, float delta) {
-        int borderColor = isHovered() ? 0xFF666666 : 0xFF000000;
+        long currentTime = System.currentTimeMillis();
+        float deltaTime = (currentTime - lastFrameTime) / 1000.0f;
+        lastFrameTime = currentTime;
 
-        ctx.fill(getX() - 1, getY() - 1, getX() + width + 1, getY() + height + 1, borderColor);
-        ctx.fill(getX(), getY(), getX() + width, getY() + height, argb);
+        boolean isHovering = this.isHovered();
+
+        if (isHovering && hoverProgress < 1.0f) {
+            hoverProgress = Math.min(1.0f, hoverProgress + deltaTime * 5.0f);
+        } else if (!isHovering && hoverProgress > 0.0f) {
+            hoverProgress = Math.max(0.0f, hoverProgress - deltaTime * 5.0f);
+        }
+
+        int x = getX();
+        int y = getY();
+        int w = width;
+        int h = height;
+
+        ctx.fill(x + 1, y + h, x + w - 1, y + h + 1, 0x33000000);
+
+        ctx.fill(x + 2, y + 2, x + w - 2, y + h - 2, argb);
+
+        int borderBrightness = (int) (100 + 55 * hoverProgress);
+        int borderColor = 0xFF000000 | (borderBrightness << 16) | (borderBrightness << 8) | borderBrightness;
+
+        ctx.fill(x, y, x + w, y + 2, borderColor);
+        ctx.fill(x, y + h - 2, x + w, y + h, borderColor);
+        ctx.fill(x, y, x + 2, y + h, borderColor);
+        ctx.fill(x + w - 2, y, x + w, y + h, borderColor);
+
+        int topGradient = addAlpha(0xFFFFFFFF, 0.2f * (1 + hoverProgress * 0.3f));
+        ctx.fill(x + 2, y + 2, x + w - 2, y + h / 2, topGradient);
+    }
+
+    private int addAlpha(int color, float alpha) {
+        int a = (int) (255 * alpha);
+        return (a << 24) | (color & 0xFFFFFF);
     }
 
     @Override

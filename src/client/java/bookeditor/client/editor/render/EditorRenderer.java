@@ -24,6 +24,9 @@ public class EditorRenderer {
         imageInteraction.beginFrame();
         textBoxInteraction.beginFrame();
 
+        imageRenderer.render(ctx, page, imageInteraction, startScreenX,
+                startScreenY - (int) Math.round(scale * scrollY), canvasScreenTop, scale, logicalW, logicalH);
+
         if (page != null) {
             for (int i = 0; i < page.nodes.size(); i++) {
                 BookData.Node node = page.nodes.get(i);
@@ -34,9 +37,6 @@ public class EditorRenderer {
                 }
             }
         }
-
-        imageRenderer.render(ctx, page, imageInteraction, startScreenX,
-                startScreenY - (int) Math.round(scale * scrollY), canvasScreenTop, scale, logicalW, logicalH);
 
         imageInteraction.renderSelectionHandles(ctx);
         textBoxInteraction.renderSelectionHandles(ctx);

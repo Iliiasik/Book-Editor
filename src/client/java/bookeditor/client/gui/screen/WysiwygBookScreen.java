@@ -5,7 +5,10 @@ import bookeditor.client.gui.components.CanvasToolbar;
 import bookeditor.client.gui.components.FormattingToolbar;
 import bookeditor.client.gui.components.NavigationBar;
 import bookeditor.client.gui.render.AuthorBadgeRenderer;
+import bookeditor.client.gui.widget.ColorPickerDropdown;
+import bookeditor.client.gui.widget.ModernTextField;
 import bookeditor.client.gui.widget.RichTextEditorWidget;
+import bookeditor.client.gui.widget.ToolbarNavButton;
 import bookeditor.client.net.BookSyncService;
 import bookeditor.client.util.ImageCache;
 import bookeditor.data.BookData;
@@ -16,12 +19,8 @@ import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
-
-import java.util.Objects;
 
 public class WysiwygBookScreen extends Screen implements WidgetHost {
 
@@ -33,11 +32,11 @@ public class WysiwygBookScreen extends Screen implements WidgetHost {
     private final net.minecraft.item.ItemStack stack;
     private BookData data;
 
-    private TextFieldWidget titleField;
+    private ModernTextField titleField;
 
     private int toolsPage = 0;
     private final int toolsPages = 2;
-    private ButtonWidget toolsPrevBtn, toolsNextBtn;
+    private ToolbarNavButton toolsPrevBtn, toolsNextBtn;
 
     private RichTextEditorWidget editor;
     private int page = 0;
@@ -55,7 +54,7 @@ public class WysiwygBookScreen extends Screen implements WidgetHost {
         this.data = BookData.readFrom(stack);
         if (this.data.pages.isEmpty()) {
             BookData.Page p = new BookData.Page();
-            p.nodes.add(new BookData.TextNode("", false,false,false, 0xFF202020, 1.0f, BookData.ALIGN_LEFT));
+            p.nodes.add(new BookData.TextNode("", false, false, false, 0xFF202020, 1.0f, BookData.ALIGN_LEFT));
             this.data.pages.add(p);
         }
     }
@@ -67,15 +66,15 @@ public class WysiwygBookScreen extends Screen implements WidgetHost {
         int y = MARGIN;
 
         if (!data.signed) {
-            int titleW = Math.max(220, this.width - MARGIN*2 - 160);
-            titleField = new TextFieldWidget(textRenderer, MARGIN, y, titleW, BTN_H, Text.translatable("screen.bookeditor.book_title"));
+            int titleW = Math.max(220, this.width - MARGIN * 2 - 160);
+            titleField = new ModernTextField(textRenderer, MARGIN, y, titleW, BTN_H, Text.translatable("screen.bookeditor.book_title"));
             titleField.setText(data.title);
             addDrawableChild(titleField);
         } else {
             titleField = null;
         }
 
-        int navBlockW = 18 + GAP + 36 + GAP + 28 + GAP + 18;
+        int navBlockW = 20 + 3 + 36 + 3 + 35 + 18 + 3 + 20;
         int navX = this.width - MARGIN - navBlockW;
         int navY = y;
 
@@ -95,15 +94,15 @@ public class WysiwygBookScreen extends Screen implements WidgetHost {
         y += BTN_H + 4;
 
         int x = MARGIN;
-        toolsPrevBtn = addDrawableChild(ButtonWidget.builder(Text.literal("◀"), b -> {
+        toolsPrevBtn = addDrawableChild(new ToolbarNavButton(x, y, 18, BTN_H, Text.literal("◀"), b -> {
             toolsPage = (toolsPage - 1 + toolsPages) % toolsPages;
             updateToolsVisibility();
-        }).dimensions(x, y, 18, BTN_H).build());
+        }));
         x += 18 + GAP;
-        toolsNextBtn = addDrawableChild(ButtonWidget.builder(Text.literal("▶"), b -> {
+        toolsNextBtn = addDrawableChild(new ToolbarNavButton(x, y, 18, BTN_H, Text.literal("▶"), b -> {
             toolsPage = (toolsPage + 1) % toolsPages;
             updateToolsVisibility();
-        }).dimensions(x, y, 18, BTN_H).build());
+        }));
 
         int rowY = y;
         toolbarY = rowY;
@@ -142,6 +141,8 @@ public class WysiwygBookScreen extends Screen implements WidgetHost {
         editor.setContent(data.pages.get(page));
         formattingToolbar.setInitialTextColor(0xFF202020);
         canvasToolbar.setCanvasColor(data.pages.get(page).bgArgb);
+        canvasToolbar.setToolSize(3);
+        canvasToolbar.setToolColor(0xFF000000);
         addDrawableChild(editor);
 
         prefetchPageImages();
@@ -150,11 +151,18 @@ public class WysiwygBookScreen extends Screen implements WidgetHost {
         updateToolsVisibility();
     }
 
-    private void changePage(int dir) { setPage(this.page + dir, true); }
+    private void changePage(int dir) {
+        setPage(this.page + dir, true);
+    }
 
     private void setPage(int idx, boolean clamp) {
-        if (clamp) { if (idx < 0) idx = 0; if (idx >= data.pages.size()) idx = data.pages.size() - 1; }
-        else { if (idx < 0) idx = 0; if (idx > data.pages.size()) idx = data.pages.size(); }
+        if (clamp) {
+            if (idx < 0) idx = 0;
+            if (idx >= data.pages.size()) idx = data.pages.size() - 1;
+        } else {
+            if (idx < 0) idx = 0;
+            if (idx > data.pages.size()) idx = data.pages.size();
+        }
         this.page = idx;
         editor.setContent(data.pages.get(page));
         canvasToolbar.setCanvasColor(data.pages.get(page).bgArgb);
@@ -186,7 +194,7 @@ public class WysiwygBookScreen extends Screen implements WidgetHost {
             BookData.Page p = new BookData.Page();
             var cur = data.pages.get(page);
             p.bgArgb = cur.bgArgb;
-            p.nodes.add(new BookData.TextNode("", false,false,false, 0xFF202020, 1.0f, BookData.ALIGN_LEFT));
+            p.nodes.add(new BookData.TextNode("", false, false, false, 0xFF202020, 1.0f, BookData.ALIGN_LEFT));
             data.pages.add(page + 1, p);
             setPage(page + 1, false);
             onDirty();
@@ -201,8 +209,9 @@ public class WysiwygBookScreen extends Screen implements WidgetHost {
                 setPage(newIndex, false);
             } else {
                 BookData.Page p = data.pages.get(0);
-                p.nodes.clear(); p.strokes.clear();
-                p.nodes.add(new BookData.TextNode("", false,false,false, 0xFF202020, 1.0f, BookData.ALIGN_LEFT));
+                p.nodes.clear();
+                p.strokes.clear();
+                p.nodes.add(new BookData.TextNode("", false, false, false, 0xFF202020, 1.0f, BookData.ALIGN_LEFT));
                 editor.setContent(p);
             }
             onDirty();
@@ -253,9 +262,37 @@ public class WysiwygBookScreen extends Screen implements WidgetHost {
     @Override
     public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
         this.renderBackground(ctx);
+
+        if (toolsPage == 0 && formattingToolbar != null && !data.signed) {
+            formattingToolbar.renderSectionBoxes(ctx);
+            formattingToolbar.renderSectionHeaders(ctx, 0xFFE0E0E0);
+        }
+        if (toolsPage == 1 && canvasToolbar != null && !data.signed) {
+            canvasToolbar.renderSectionBoxes(ctx);
+            canvasToolbar.renderSectionHeaders(ctx, 0xFFE0E0E0);
+        }
+
         super.render(ctx, mouseX, mouseY, delta);
+
         if (data.signed) {
             AuthorBadgeRenderer.renderBadge(ctx, textRenderer, this.width, toolbarY, BTN_H, data);
+        }
+
+        if (navigationBar != null) {
+            int textX = navigationBar.getPageFieldEndX() + 5;
+            int textY = toolbarY - BTN_H - 4 + (BTN_H - 8) / 2;
+            Text totalText = Text.literal("/ " + data.pages.size());
+            ctx.drawText(textRenderer, totalText, textX, textY, 0xFFE0E0E0, false);
+        }
+
+        renderColorPickerDropdowns(ctx, mouseX, mouseY, delta);
+    }
+
+    private void renderColorPickerDropdowns(DrawContext ctx, int mouseX, int mouseY, float delta) {
+        for (var child : this.children()) {
+            if (child instanceof ColorPickerDropdown dropdown && dropdown.isExpanded()) {
+                dropdown.renderDropdown(ctx, mouseX, mouseY);
+            }
         }
     }
 
@@ -274,13 +311,33 @@ public class WysiwygBookScreen extends Screen implements WidgetHost {
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (!data.signed && hasControlDown()) {
-            if (keyCode == 66) { editor.setBold(!editor.isBold()); if (formattingToolbar != null) formattingToolbar.refreshFormatButtons(); onDirty(); return true; }
-            else if (keyCode == 73) { editor.setItalic(!editor.isItalic()); if (formattingToolbar != null) formattingToolbar.refreshFormatButtons(); onDirty(); return true; }
-            else if (keyCode == 85) { editor.setUnderline(!editor.isUnderline()); if (formattingToolbar != null) formattingToolbar.refreshFormatButtons(); onDirty(); return true; }
-            else if (keyCode == 90) { if (editor.undo()) onDirty(); return true; }
-            else if (keyCode == 89) { if (editor.redo()) onDirty(); return true; }
+            if (keyCode == 66) {
+                editor.setBold(!editor.isBold());
+                if (formattingToolbar != null) formattingToolbar.refreshFormatButtons();
+                onDirty();
+                return true;
+            } else if (keyCode == 73) {
+                editor.setItalic(!editor.isItalic());
+                if (formattingToolbar != null) formattingToolbar.refreshFormatButtons();
+                onDirty();
+                return true;
+            } else if (keyCode == 85) {
+                editor.setUnderline(!editor.isUnderline());
+                if (formattingToolbar != null) formattingToolbar.refreshFormatButtons();
+                onDirty();
+                return true;
+            } else if (keyCode == 90) {
+                if (editor.undo()) onDirty();
+                return true;
+            } else if (keyCode == 89) {
+                if (editor.redo()) onDirty();
+                return true;
+            }
         }
-        if (!data.signed && (keyCode == 257 || keyCode == 335) && hasControlDown()) { sign(); return true; }
+        if (!data.signed && (keyCode == 257 || keyCode == 335) && hasControlDown()) {
+            sign();
+            return true;
+        }
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
 

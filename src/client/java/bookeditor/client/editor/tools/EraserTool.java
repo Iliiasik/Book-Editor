@@ -1,6 +1,9 @@
 package bookeditor.client.editor.tools;
 
 import bookeditor.data.BookData;
+import net.minecraft.client.gui.DrawContext;
+
+import java.util.ArrayList;
 
 public class EraserTool {
     private boolean active = false;
@@ -28,15 +31,19 @@ public class EraserTool {
         int localX = (int) Math.floor((mx - contentLeft) / scale);
         int localY = (int) Math.floor((my - contentTop) / scale) + scrollY;
 
-        page.strokes.removeIf(stroke -> {
-            for (BookData.Stroke.Point p : stroke.points) {
+        for (BookData.Stroke stroke : new ArrayList<>(page.strokes)) {
+            stroke.points.removeIf(p -> {
                 int dx = p.x - localX;
                 int dy = p.y - localY;
-                if (Math.sqrt(dx * dx + dy * dy) < eraserSize) {
-                    return true;
-                }
+                return Math.sqrt(dx * dx + dy * dy) < eraserSize;
+            });
+
+            if (stroke.points.isEmpty()) {
+                page.strokes.remove(stroke);
             }
-            return false;
-        });
+        }
+    }
+
+    public void renderPreview(DrawContext ctx, int mx, int my, int contentLeft, int contentTop, double scale, int scrollY) {
     }
 }

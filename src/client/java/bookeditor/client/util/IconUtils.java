@@ -13,7 +13,7 @@ public class IconUtils {
     public static final Identifier ICON_ERASER = new Identifier("bookeditor", "textures/gui/icons/eraser.png");
     public static final Identifier ICON_COLOR = new Identifier("bookeditor", "textures/gui/icons/color.png");
     public static final Identifier ICON_BG_COLOR = new Identifier("bookeditor", "textures/gui/icons/bg_color.png");
-    public static final Identifier ICON_SIZE = new Identifier("bookeditor", "textures/gui/icons/size.png");
+    public static final Identifier ICON_APPLY = new Identifier("bookeditor", "textures/gui/icons/apply.png");
     public static final Identifier ICON_INCREASE_SIZE = new Identifier("bookeditor", "textures/gui/icons/increase_size.png");
     public static final Identifier ICON_DECREASE_SIZE = new Identifier("bookeditor", "textures/gui/icons/decrease_size.png");
     public static final Identifier ICON_NEW_PAGE = new Identifier("bookeditor", "textures/gui/icons/new_page.png");

@@ -1,12 +1,13 @@
 package bookeditor.client.gui.components;
 
 import bookeditor.client.gui.base.WidgetHost;
-import bookeditor.client.gui.widget.ColorPickerButton;
+import bookeditor.client.gui.widget.ColorPickerDropdown;
 import bookeditor.client.gui.widget.IconButton;
+import bookeditor.client.gui.widget.NumericTextField;
 import bookeditor.client.gui.widget.RichTextEditorWidget;
 import bookeditor.client.util.IconUtils;
 import bookeditor.data.BookData;
-import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
 
 public class FormattingToolbar {
@@ -22,9 +23,15 @@ public class FormattingToolbar {
     private IconButton undoBtn, redoBtn;
     private IconButton boldBtn, italicBtn, underlineBtn;
     private IconButton increaseSizeBtn, decreaseSizeBtn;
-    private TextFieldWidget sizeField;
+    private NumericTextField sizeField;
     private IconButton alignLeftBtn, alignCenterBtn, alignRightBtn;
-    private ColorPickerButton textColorBtn;
+    private ColorPickerDropdown textColorBtn;
+
+    private int historyEndX;
+    private int stylingEndX;
+    private int sizeEndX;
+    private int alignEndX;
+    private int colorEndX;
 
     public FormattingToolbar(WidgetHost host,
                              RichTextEditorWidget editor,
@@ -54,7 +61,8 @@ public class FormattingToolbar {
             if (editor.redo()) onDirty.run();
         });
         host.addDrawable(redoBtn);
-        cx += 18 + gap;
+        cx += 18 + 10;
+        historyEndX = cx;
 
         boldBtn = new IconButton(cx, y, 18, btnH, IconUtils.ICON_BOLD,
                 Text.translatable("tooltip.bookeditor.bold"), b -> {
@@ -84,7 +92,8 @@ public class FormattingToolbar {
             onDirty.run();
         });
         host.addDrawable(underlineBtn);
-        cx += 18 + gap;
+        cx += 18 + 10;
+        stylingEndX = cx;
 
         decreaseSizeBtn = new IconButton(cx, y, 18, btnH, IconUtils.ICON_DECREASE_SIZE,
                 Text.translatable("tooltip.bookeditor.decrease_size"), b -> {
@@ -98,9 +107,20 @@ public class FormattingToolbar {
         host.addDrawable(decreaseSizeBtn);
         cx += 18 + gap;
 
-        sizeField = new TextFieldWidget(host.getTextRenderer(), cx, y, 40, btnH, Text.translatable("tooltip.bookeditor.text_size"));
+        sizeField = new NumericTextField(host.getTextRenderer(), cx, y, 40, btnH, Text.translatable("tooltip.bookeditor.text_size"));
         sizeField.setText("1.0");
-        sizeField.setTooltip(net.minecraft.client.gui.tooltip.Tooltip.of(Text.translatable("tooltip.bookeditor.text_size")));
+        sizeField.setTooltip(net.minecraft.client.gui.tooltip.Tooltip.of(Text.translatable("tooltip.bookeditor.text_size_range")));
+        sizeField.setOnEnterPressed(() -> {
+            try {
+                float size = Float.parseFloat(sizeField.getText().trim());
+                size = Math.max(0.5f, Math.min(3.0f, size));
+                editor.setSize(size);
+                editor.applyStyleToSelection();
+                sizeField.setText(String.format("%.1f", size));
+                onDirty.run();
+            } catch (NumberFormatException ignored) {
+            }
+        });
         host.addDrawable(sizeField);
         cx += 40 + gap;
 
@@ -114,7 +134,8 @@ public class FormattingToolbar {
             onDirty.run();
         });
         host.addDrawable(increaseSizeBtn);
-        cx += 18 + gap;
+        cx += 18 + 10;
+        sizeEndX = cx;
 
         alignLeftBtn = new IconButton(cx, y, 18, btnH, IconUtils.ICON_ALIGN_LEFT,
                 Text.translatable("tooltip.bookeditor.align_left"), b -> {
@@ -138,17 +159,50 @@ public class FormattingToolbar {
             onDirty.run();
         });
         host.addDrawable(alignRightBtn);
-        cx += 18 + gap;
+        cx += 18 + 10;
+        alignEndX = cx;
 
-        textColorBtn = new ColorPickerButton(cx, y, argb -> {
+        textColorBtn = new ColorPickerDropdown(cx, y, argb -> {
             editor.setColor(argb);
             editor.applyStyleToSelection();
             onDirty.run();
         }, 0xFF202020);
         textColorBtn.setTooltip(net.minecraft.client.gui.tooltip.Tooltip.of(Text.translatable("tooltip.bookeditor.text_color")));
         host.addDrawable(textColorBtn);
+        cx += 20;
+        colorEndX = cx;
 
         refreshFormatButtons();
+    }
+
+    public void renderSectionHeaders(DrawContext ctx, int textColor) {
+        int labelY = y - 14;
+
+        ctx.drawText(host.getTextRenderer(), Text.translatable("toolbar.bookeditor.history"),
+                x, labelY, textColor, false);
+
+        ctx.drawText(host.getTextRenderer(), Text.translatable("toolbar.bookeditor.styling"),
+                historyEndX, labelY, textColor, false);
+
+        ctx.drawText(host.getTextRenderer(), Text.translatable("toolbar.bookeditor.size"),
+                stylingEndX, labelY, textColor, false);
+
+        ctx.drawText(host.getTextRenderer(), Text.translatable("toolbar.bookeditor.alignment"),
+                sizeEndX, labelY, textColor, false);
+
+        ctx.drawText(host.getTextRenderer(), Text.translatable("toolbar.bookeditor.color"),
+                alignEndX, labelY, textColor, false);
+    }
+
+    public void renderSectionBoxes(DrawContext ctx) {
+        int boxY = y - 2;
+        int boxH = btnH + 4;
+
+        ctx.fill(x - 2, boxY, historyEndX - 5, boxY + boxH, 0x33FFFFFF);
+        ctx.fill(historyEndX - 2, boxY, stylingEndX - 5, boxY + boxH, 0x33FFFFFF);
+        ctx.fill(stylingEndX - 2, boxY, sizeEndX - 5, boxY + boxH, 0x33FFFFFF);
+        ctx.fill(sizeEndX - 2, boxY, alignEndX - 5, boxY + boxH, 0x33FFFFFF);
+        ctx.fill(alignEndX - 2, boxY, colorEndX + 2, boxY + boxH, 0x33FFFFFF);
     }
 
     public void setVisible(boolean v) {
@@ -175,13 +229,5 @@ public class FormattingToolbar {
     public void setInitialTextColor(int argb) {
         if (textColorBtn != null) textColorBtn.setArgb(argb);
         editor.setColor(argb);
-    }
-
-    public void setFontSizeField(float s) {
-        if (sizeField != null) sizeField.setText(String.format("%.1f", s));
-    }
-
-    public void updateTextColor(int argb) {
-        if (textColorBtn != null) textColorBtn.setArgb(argb);
     }
 }

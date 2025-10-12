@@ -48,8 +48,8 @@ public class ColorPaletteScreen extends Screen {
             }).dimensions(x, y, colorSize, colorSize).build());
         }
 
-        addDrawableChild(ButtonWidget.builder(Text.translatable("gui.cancel"), b -> close())
-                .dimensions(this.width / 2 - 50, this.height / 2 + 150, 100, 20).build());
+        addDrawableChild(new ModernButton(this.width / 2 - 50, this.height - 40, 100, 20,
+                Text.translatable("gui.cancel"), b -> close()));
     }
 
     @Override

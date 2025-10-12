@@ -136,13 +136,15 @@ public class TextBoxEditOps {
                     newSegments.add(before);
                 }
 
-                BookData.TextSegment styled = seg.copy();
-                styled.text = seg.text.substring(overlapStart - segStart, overlapEnd - segStart);
-                styled.bold = style.bold;
-                styled.italic = style.italic;
-                styled.underline = style.underline;
-                styled.argb = style.argb;
-                styled.size = style.size;
+                BookData.TextSegment styled = new BookData.TextSegment(
+                        seg.text.substring(overlapStart - segStart, overlapEnd - segStart),
+                        style.bold,
+                        style.italic,
+                        style.underline,
+                        style.argb,
+                        style.size
+                );
+                styled.align = seg.align;
                 newSegments.add(styled);
 
                 if (segEnd > overlapEnd) {

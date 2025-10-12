@@ -1,89 +1,106 @@
 package bookeditor.client.gui.components;
 
 import bookeditor.client.gui.base.WidgetHost;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.TextFieldWidget;
+import bookeditor.client.gui.widget.IconButton;
+import bookeditor.client.gui.widget.ModernButton;
+import bookeditor.client.gui.widget.NumericTextField;
+import bookeditor.client.util.IconUtils;
 import net.minecraft.text.Text;
 
-import java.util.function.Consumer;
+import java.util.function.IntConsumer;
 import java.util.function.IntSupplier;
 
 public class NavigationBar {
     private final WidgetHost host;
     private final int x;
     private final int y;
-    private final int height;
-    private final IntSupplier currentPageSupplier;
-    private final IntSupplier totalPagesSupplier;
-    private final Consumer<Integer> gotoPageHandler;
-    private final Runnable prevHandler;
-    private final Runnable nextHandler;
+    private final int btnH;
+    private final IntSupplier getCurrentPage;
+    private final IntSupplier getTotalPages;
+    private final IntConsumer setPage;
+    private final Runnable previousPage;
+    private final Runnable nextPage;
 
-    private ButtonWidget prevBtn;
-    private TextFieldWidget gotoField;
-    private ButtonWidget goBtn;
-    private ButtonWidget nextBtn;
+    private ModernButton prevBtn;
+    private NumericTextField pageField;
+    private IconButton goBtn;
+    private ModernButton nextBtn;
 
-    private static final int BTN_H = 18;
-    private static final int GAP = 5;
-
-    public NavigationBar(WidgetHost host,
-                         int x,
-                         int y,
-                         int height,
-                         IntSupplier currentPageSupplier,
-                         IntSupplier totalPagesSupplier,
-                         Consumer<Integer> gotoPageHandler,
-                         Runnable prevHandler,
-                         Runnable nextHandler) {
+    public NavigationBar(WidgetHost host, int x, int y, int btnH,
+                         IntSupplier getCurrentPage, IntSupplier getTotalPages,
+                         IntConsumer setPage, Runnable previousPage, Runnable nextPage) {
         this.host = host;
         this.x = x;
         this.y = y;
-        this.height = Math.max(BTN_H, height);
-        this.currentPageSupplier = currentPageSupplier;
-        this.totalPagesSupplier = totalPagesSupplier;
-        this.gotoPageHandler = gotoPageHandler;
-        this.prevHandler = prevHandler;
-        this.nextHandler = nextHandler;
+        this.btnH = btnH;
+        this.getCurrentPage = getCurrentPage;
+        this.getTotalPages = getTotalPages;
+        this.setPage = setPage;
+        this.previousPage = previousPage;
+        this.nextPage = nextPage;
     }
 
-    public int build() {
-        int navX = x;
+    public void build() {
+        int cx = x;
 
-        prevBtn = host.addDrawable(ButtonWidget.builder(Text.literal("<"), b -> prevHandler.run())
-                .dimensions(navX, y, 18, BTN_H).build());
-        navX += 18 + GAP;
+        prevBtn = new ModernButton(cx, y, 20, btnH, Text.literal("◀"), b -> previousPage.run());
+        host.addDrawable(prevBtn);
+        cx += 20 + 3;
 
-        gotoField = new TextFieldWidget(host.getTextRenderer(), navX, y, 36, BTN_H, Text.translatable("screen.bookeditor.goto"));
-        gotoField.setText(Integer.toString(currentPageSupplier.getAsInt() + 1));
-        host.addDrawable(gotoField);
-        navX += 36 + GAP;
+        pageField = new NumericTextField(host.getTextRenderer(), cx, y, 36, btnH, Text.literal(""));
+        pageField.setText(String.valueOf(getCurrentPage.getAsInt() + 1));
+        pageField.setMaxLength(4);
+        host.addDrawable(pageField);
+        cx += 36 + 3;
 
-        goBtn = host.addDrawable(ButtonWidget.builder(Text.literal("Go"), b -> {
-            try {
-                int p = Integer.parseInt(gotoField.getText().trim()) - 1;
-                gotoPageHandler.accept(p);
-            } catch (NumberFormatException ignored) {}
-        }).dimensions(navX, y, 28, BTN_H).build());
-        navX += 28 + GAP;
+        cx += 35;
 
-        nextBtn = host.addDrawable(ButtonWidget.builder(Text.literal(">"), b -> nextHandler.run())
-                .dimensions(navX, y, 18, BTN_H).build());
+        goBtn = new IconButton(cx, y, 18, btnH, IconUtils.ICON_APPLY,
+                Text.translatable("tooltip.bookeditor.go_to_page"), b -> handlePageFieldSubmit());
+        host.addDrawable(goBtn);
+        cx += 18 + 3;
 
-        int totalWidth = (18 + GAP) + (36 + GAP) + (28 + GAP) + 18;
-        return totalWidth;
+        nextBtn = new ModernButton(cx, y, 20, btnH, Text.literal("▶"), b -> nextPage.run());
+        host.addDrawable(nextBtn);
     }
 
     public void updateFieldFromState() {
-        if (gotoField != null) {
-            gotoField.setText(Integer.toString(currentPageSupplier.getAsInt() + 1));
+        if (pageField != null) {
+            pageField.setText(String.valueOf(getCurrentPage.getAsInt() + 1));
+        }
+        updateButtonStates();
+    }
+
+    public void setVisible(boolean visible) {
+        if (prevBtn != null) prevBtn.visible = visible;
+        if (pageField != null) pageField.visible = visible;
+        if (goBtn != null) goBtn.visible = visible;
+        if (nextBtn != null) nextBtn.visible = visible;
+    }
+
+    public void updateButtonStates() {
+        if (prevBtn != null) {
+            prevBtn.active = getCurrentPage.getAsInt() > 0;
+        }
+        if (nextBtn != null) {
+            nextBtn.active = getCurrentPage.getAsInt() < getTotalPages.getAsInt() - 1;
         }
     }
 
-    public void setVisible(boolean v) {
-        if (prevBtn != null) prevBtn.visible = v;
-        if (gotoField != null) gotoField.visible = v;
-        if (goBtn != null) goBtn.visible = v;
-        if (nextBtn != null) nextBtn.visible = v;
+    public void handlePageFieldSubmit() {
+        if (pageField == null) return;
+        try {
+            int page = Integer.parseInt(pageField.getText()) - 1;
+            if (page >= 0 && page < getTotalPages.getAsInt()) {
+                setPage.accept(page);
+            }
+        } catch (NumberFormatException ignored) {
+        }
+        updateFieldFromState();
+    }
+
+    public int getPageFieldEndX() {
+        if (pageField == null) return x;
+        return pageField.getX() + pageField.getWidth();
     }
 }

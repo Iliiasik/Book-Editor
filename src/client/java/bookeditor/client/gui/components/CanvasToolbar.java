@@ -2,11 +2,12 @@ package bookeditor.client.gui.components;
 
 import bookeditor.client.editor.tools.DrawingTool;
 import bookeditor.client.gui.base.WidgetHost;
-import bookeditor.client.gui.widget.ColorPickerButton;
+import bookeditor.client.gui.widget.ColorPickerDropdown;
 import bookeditor.client.gui.widget.IconButton;
+import bookeditor.client.gui.widget.NumericTextField;
 import bookeditor.client.gui.widget.RichTextEditorWidget;
 import bookeditor.client.util.IconUtils;
-import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
 
 import java.util.function.Consumer;
@@ -27,8 +28,7 @@ public class CanvasToolbar {
 
     private IconButton textBoxBtn;
     private IconButton imgBtn;
-    private ColorPickerButton canvasColorBtn;
-    private ColorPickerButton textBoxBgColorBtn;
+    private ColorPickerDropdown textBoxBgColorBtn;
 
     private IconButton brushBtn;
     private IconButton sprayBtn;
@@ -37,11 +37,17 @@ public class CanvasToolbar {
     private IconButton circleBtn;
     private IconButton eraserBtn;
 
-    private TextFieldWidget toolSizeField;
-    private IconButton toolApplyBtn;
+    private ColorPickerDropdown toolColorBtn;
+    private NumericTextField toolSizeField;
 
+    private ColorPickerDropdown canvasColorBtn;
     private IconButton newPageBtn, deletePageBtn;
     private IconButton signBtn;
+
+    private int textEndX;
+    private int toolsEndX;
+    private int canvasEndX;
+    private int pagesEndX;
 
     public CanvasToolbar(WidgetHost host,
                          RichTextEditorWidget editor,
@@ -87,22 +93,14 @@ public class CanvasToolbar {
         host.addDrawable(imgBtn);
         cx += 18 + gap;
 
-        canvasColorBtn = new ColorPickerButton(cx, y, argb -> {
-            onCanvasColorChanged.accept(argb);
-            editor.markSnapshot();
-            onDirty.run();
-        }, initialCanvasArgb);
-        canvasColorBtn.setTooltip(net.minecraft.client.gui.tooltip.Tooltip.of(Text.translatable("tooltip.bookeditor.canvas_color")));
-        host.addDrawable(canvasColorBtn);
-        cx += 20 + gap;
-
-        textBoxBgColorBtn = new ColorPickerButton(cx, y, argb -> {
+        textBoxBgColorBtn = new ColorPickerDropdown(cx, y, argb -> {
             editor.setTextBoxBgColor(argb);
             onDirty.run();
         }, 0x00FFFFFF);
         textBoxBgColorBtn.setTooltip(net.minecraft.client.gui.tooltip.Tooltip.of(Text.translatable("tooltip.bookeditor.textbox_bg_color")));
         host.addDrawable(textBoxBgColorBtn);
-        cx += 20 + gap;
+        cx += 20 + 10;
+        textEndX = cx;
 
         brushBtn = new IconButton(cx, y, 18, btnH, IconUtils.ICON_BRUSH,
                 Text.translatable("tooltip.bookeditor.brush"), b -> {
@@ -182,22 +180,39 @@ public class CanvasToolbar {
         host.addDrawable(eraserBtn);
         cx += 18 + gap;
 
-        toolSizeField = new TextFieldWidget(host.getTextRenderer(), cx, y, 36, btnH, Text.translatable("tooltip.bookeditor.tool_size"));
-        toolSizeField.setText("3");
-        toolSizeField.setTooltip(net.minecraft.client.gui.tooltip.Tooltip.of(Text.translatable("tooltip.bookeditor.tool_size")));
-        host.addDrawable(toolSizeField);
-        cx += 36 + gap;
+        toolColorBtn = new ColorPickerDropdown(cx, y, argb -> {
+            editor.setDrawingToolColor(argb);
+            onDirty.run();
+        }, 0xFF000000);
+        toolColorBtn.setTooltip(net.minecraft.client.gui.tooltip.Tooltip.of(Text.translatable("tooltip.bookeditor.tool_color")));
+        host.addDrawable(toolColorBtn);
+        cx += 20 + gap;
 
-        toolApplyBtn = new IconButton(cx, y, 18, btnH, IconUtils.ICON_SIZE,
-                Text.translatable("tooltip.bookeditor.apply_tool_size"), b -> {
+        toolSizeField = new NumericTextField(host.getTextRenderer(), cx, y, 36, btnH, Text.translatable("tooltip.bookeditor.tool_size"));
+        toolSizeField.setText("3");
+        toolSizeField.setTooltip(net.minecraft.client.gui.tooltip.Tooltip.of(Text.translatable("tooltip.bookeditor.tool_size_range")));
+        toolSizeField.setOnEnterPressed(() -> {
             try {
-                int px = Math.max(1, Math.min(32, Integer.parseInt(toolSizeField.getText().trim())));
+                int px = Integer.parseInt(toolSizeField.getText().trim());
+                px = Math.max(1, Math.min(50, px));
                 editor.setToolSize(px);
+                toolSizeField.setText(String.valueOf(px));
             } catch (Exception ignored) {
             }
         });
-        host.addDrawable(toolApplyBtn);
-        cx += 18 + gap;
+        host.addDrawable(toolSizeField);
+        cx += 36 + 10;
+        toolsEndX = cx;
+
+        canvasColorBtn = new ColorPickerDropdown(cx, y, argb -> {
+            onCanvasColorChanged.accept(argb);
+            editor.markSnapshot();
+            onDirty.run();
+        }, initialCanvasArgb);
+        canvasColorBtn.setTooltip(net.minecraft.client.gui.tooltip.Tooltip.of(Text.translatable("tooltip.bookeditor.canvas_color")));
+        host.addDrawable(canvasColorBtn);
+        cx += 20 + 10;
+        canvasEndX = cx;
 
         newPageBtn = new IconButton(cx, y, 18, btnH, IconUtils.ICON_NEW_PAGE,
                 Text.translatable("tooltip.bookeditor.new_page"), b -> createNewPage.run());
@@ -212,8 +227,36 @@ public class CanvasToolbar {
         signBtn = new IconButton(cx, y, 18, btnH, IconUtils.ICON_SIGN,
                 Text.translatable("tooltip.bookeditor.sign"), b -> signAction.run());
         host.addDrawable(signBtn);
+        cx += 18;
+        pagesEndX = cx;
 
         updateToolHighlight();
+    }
+
+    public void renderSectionHeaders(DrawContext ctx, int textColor) {
+        int labelY = y - 14;
+
+        ctx.drawText(host.getTextRenderer(), Text.translatable("toolbar.bookeditor.text"),
+                x, labelY, textColor, false);
+
+        ctx.drawText(host.getTextRenderer(), Text.translatable("toolbar.bookeditor.tools"),
+                textEndX, labelY, textColor, false);
+
+        ctx.drawText(host.getTextRenderer(), Text.translatable("toolbar.bookeditor.canvas"),
+                toolsEndX, labelY, textColor, false);
+
+        ctx.drawText(host.getTextRenderer(), Text.translatable("toolbar.bookeditor.pages"),
+                canvasEndX, labelY, textColor, false);
+    }
+
+    public void renderSectionBoxes(DrawContext ctx) {
+        int boxY = y - 2;
+        int boxH = btnH + 4;
+
+        ctx.fill(x - 2, boxY, textEndX - 5, boxY + boxH, 0x33FFFFFF);
+        ctx.fill(textEndX - 2, boxY, toolsEndX - 5, boxY + boxH, 0x33FFFFFF);
+        ctx.fill(toolsEndX - 2, boxY, canvasEndX - 5, boxY + boxH, 0x33FFFFFF);
+        ctx.fill(canvasEndX - 2, boxY, pagesEndX + 2, boxY + boxH, 0x33FFFFFF);
     }
 
     public void updateToolHighlight() {
@@ -232,7 +275,6 @@ public class CanvasToolbar {
     public void setVisible(boolean v, boolean signed) {
         if (textBoxBtn != null) textBoxBtn.visible = v;
         if (imgBtn != null) imgBtn.visible = v;
-        if (canvasColorBtn != null) canvasColorBtn.visible = v;
         if (textBoxBgColorBtn != null) textBoxBgColorBtn.visible = v;
         if (brushBtn != null) brushBtn.visible = v;
         if (sprayBtn != null) sprayBtn.visible = v;
@@ -240,8 +282,9 @@ public class CanvasToolbar {
         if (rectangleBtn != null) rectangleBtn.visible = v;
         if (circleBtn != null) circleBtn.visible = v;
         if (eraserBtn != null) eraserBtn.visible = v;
+        if (toolColorBtn != null) toolColorBtn.visible = v;
         if (toolSizeField != null) toolSizeField.visible = v;
-        if (toolApplyBtn != null) toolApplyBtn.visible = v;
+        if (canvasColorBtn != null) canvasColorBtn.visible = v;
         if (newPageBtn != null) newPageBtn.visible = v;
         if (deletePageBtn != null) deletePageBtn.visible = v;
         if (signBtn != null) signBtn.visible = v && !signed;
@@ -255,8 +298,7 @@ public class CanvasToolbar {
         if (toolSizeField != null) toolSizeField.setText(Integer.toString(px));
         editor.setToolSize(px);
     }
-
-    public void setTextBoxBgColor(int argb) {
-        if (textBoxBgColorBtn != null) textBoxBgColorBtn.setArgb(argb);
+    public void setToolColor(int argb) {
+        if (toolColorBtn != null) toolColorBtn.setArgb(argb);
     }
 }

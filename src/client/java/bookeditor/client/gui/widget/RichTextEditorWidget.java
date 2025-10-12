@@ -218,6 +218,10 @@ public class RichTextEditorWidget extends ClickableWidget {
         return size;
     }
 
+    public void setDrawingToolColor(int argb) {
+        drawingTool.setColor(argb);
+    }
+
     public void setItalic(boolean italic) {
         this.italic = italic;
     }
@@ -369,9 +373,12 @@ public class RichTextEditorWidget extends ClickableWidget {
             textBoxCreationTool.renderPreview(ctx, contentScreenLeft(), contentScreenTop(), scale(), scrollY);
         }
 
+        if (eraserTool.isActive()) {
+            eraserTool.renderPreview(ctx, mouseX, mouseY, contentScreenLeft(), contentScreenTop(), scale(), scrollY);
+        }
+
         ctx.disableScissor();
     }
-
     private void renderFrame(DrawContext ctx) {
         int frame = isHovered() ? 0xFFAAAAAA : 0xFFBEBEBE;
         ctx.fill(getX() - 1, getY() - 1, getX() + getWidth() + 1, getY() + getHeight() + 1, frame);
