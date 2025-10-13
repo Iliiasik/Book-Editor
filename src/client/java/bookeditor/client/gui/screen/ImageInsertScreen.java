@@ -31,30 +31,28 @@ public class ImageInsertScreen extends Screen {
     @Override
     protected void init() {
         int centerX = this.width / 2;
-        int y = this.height / 2 - 60;
+        int y = this.height / 2 - 50;
 
-        y += 30;
-
-        urlField = new ModernTextField(this.textRenderer, centerX - 150, y, 300, 22, Text.literal(""));
+        urlField = new ModernTextField(this.textRenderer, centerX - 150, y, 300, 20, Text.literal(""));
         urlField.setMaxLength(2048);
         addDrawableChild(urlField);
 
-        y += 35;
+        y += 30;
 
-        wField = new NumericTextField(this.textRenderer, centerX - 150, y, 140, 22, Text.literal(""));
+        wField = new NumericTextField(this.textRenderer, centerX - 150 + 60, y, 80, 20, Text.literal(""));
         wField.setText("64");
         addDrawableChild(wField);
 
-        hField = new NumericTextField(this.textRenderer, centerX + 10, y, 140, 22, Text.literal(""));
+        hField = new NumericTextField(this.textRenderer, centerX + 10 + 60, y, 80, 20, Text.literal(""));
         hField.setText("64");
         addDrawableChild(hField);
 
-        y += 35;
+        y += 30;
 
-        addDrawableChild(new ModernButton(centerX - 150, y, 140, 24,
+        addDrawableChild(new ModernButton(centerX - 150, y, 140, 22,
                 Text.translatable("gui.cancel"), b -> close()));
 
-        addDrawableChild(new ModernButton(centerX + 10, y, 140, 24,
+        addDrawableChild(new ModernButton(centerX + 10, y, 140, 22,
                 Text.translatable("screen.bookeditor.add"), b -> {
             try {
                 int w = Integer.parseInt(wField.getText().trim());
@@ -74,26 +72,26 @@ public class ImageInsertScreen extends Screen {
         this.renderBackground(ctx);
 
         int panelX = this.width / 2 - 160;
-        int panelY = this.height / 2 - 80;
+        int panelY = this.height / 2 - 70;
         int panelW = 320;
-        int panelH = 160;
+        int panelH = 140;
 
         ctx.fill(panelX - 2, panelY - 2, panelX + panelW + 2, panelY + panelH + 2, 0xFF1E1E1E);
         ctx.fill(panelX, panelY, panelX + panelW, panelY + panelH, 0xFF2D2D30);
         ctx.fill(panelX, panelY, panelX + panelW, panelY + 2, 0xFF007ACC);
 
-        int titleY = panelY - 28;
+        int titleY = panelY - 24;
         ctx.drawCenteredTextWithShadow(this.textRenderer, this.getTitle(), this.width / 2, titleY, 0xFFFFFFFF);
 
-        int urlLabelY = panelY + 8;
+        int urlY = this.height / 2 - 50;
         ctx.drawText(this.textRenderer, Text.translatable("screen.bookeditor.url_label"),
-                panelX + 10, urlLabelY, 0xFFE0E0E0, false);
+                this.width / 2 - 150, urlY - 12, 0xFFE0E0E0, false);
 
-        int sizeLabelY = this.height / 2 - 25;
+        int sizeY = this.height / 2 - 20;
         ctx.drawText(this.textRenderer, Text.translatable("screen.bookeditor.width_label"),
-                panelX + 10, sizeLabelY, 0xFFE0E0E0, false);
+                this.width / 2 - 150, sizeY, 0xFFE0E0E0, false);
         ctx.drawText(this.textRenderer, Text.translatable("screen.bookeditor.height_label"),
-                this.width / 2 + 20, sizeLabelY, 0xFFE0E0E0, false);
+                this.width / 2 + 10, sizeY, 0xFFE0E0E0, false);
 
         super.render(ctx, mouseX, mouseY, delta);
     }

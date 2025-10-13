@@ -49,6 +49,8 @@ public class CanvasToolbar {
     private int canvasEndX;
     private int pagesEndX;
 
+    private boolean compactMode = false;
+
     public CanvasToolbar(WidgetHost host,
                          RichTextEditorWidget editor,
                          Runnable openInsertDialog,
@@ -72,26 +74,27 @@ public class CanvasToolbar {
         this.gap = gap;
     }
 
+    public void setCompactMode(boolean compact) {
+        this.compactMode = compact;
+    }
+
     public void build(int initialCanvasArgb) {
         int cx = x;
 
         textBoxBtn = new IconButton(cx, y, 18, btnH, IconUtils.ICON_TEXTBOX,
                 Text.translatable("tooltip.bookeditor.textbox"), b -> {
-            if (editor.isTextBoxToolActive()) {
-                editor.deactivateAllTools();
-            } else {
-                editor.activateTextBoxTool();
-            }
-            updateToolHighlight();
+            editor.activateTextBoxTool();
             onDirty.run();
         });
         host.addDrawable(textBoxBtn);
         cx += 18 + gap;
 
-        imgBtn = new IconButton(cx, y, 18, btnH, IconUtils.ICON_IMAGE,
-                Text.translatable("tooltip.bookeditor.image"), b -> openInsertDialog.run());
-        host.addDrawable(imgBtn);
-        cx += 18 + gap;
+        if (!compactMode) {
+            imgBtn = new IconButton(cx, y, 18, btnH, IconUtils.ICON_IMAGE,
+                    Text.translatable("tooltip.bookeditor.image"), b -> openInsertDialog.run());
+            host.addDrawable(imgBtn);
+            cx += 18 + gap;
+        }
 
         textBoxBgColorBtn = new ColorPickerDropdown(cx, y, argb -> {
             editor.setTextBoxBgColor(argb);
@@ -115,18 +118,20 @@ public class CanvasToolbar {
         host.addDrawable(brushBtn);
         cx += 18 + gap;
 
-        sprayBtn = new IconButton(cx, y, 18, btnH, IconUtils.ICON_SPRAY,
-                Text.translatable("tooltip.bookeditor.spray"), b -> {
-            if (editor.getCurrentDrawingTool() == DrawingTool.SPRAY) {
-                editor.deactivateAllTools();
-            } else {
-                editor.setDrawingTool(DrawingTool.SPRAY);
-            }
-            updateToolHighlight();
-            onDirty.run();
-        });
-        host.addDrawable(sprayBtn);
-        cx += 18 + gap;
+        if (!compactMode) {
+            sprayBtn = new IconButton(cx, y, 18, btnH, IconUtils.ICON_SPRAY,
+                    Text.translatable("tooltip.bookeditor.spray"), b -> {
+                if (editor.getCurrentDrawingTool() == DrawingTool.SPRAY) {
+                    editor.deactivateAllTools();
+                } else {
+                    editor.setDrawingTool(DrawingTool.SPRAY);
+                }
+                updateToolHighlight();
+                onDirty.run();
+            });
+            host.addDrawable(sprayBtn);
+            cx += 18 + gap;
+        }
 
         lineBtn = new IconButton(cx, y, 18, btnH, IconUtils.ICON_LINE,
                 Text.translatable("tooltip.bookeditor.line"), b -> {
@@ -141,31 +146,33 @@ public class CanvasToolbar {
         host.addDrawable(lineBtn);
         cx += 18 + gap;
 
-        rectangleBtn = new IconButton(cx, y, 18, btnH, IconUtils.ICON_RECTANGLE,
-                Text.translatable("tooltip.bookeditor.rectangle"), b -> {
-            if (editor.getCurrentDrawingTool() == DrawingTool.RECTANGLE) {
-                editor.deactivateAllTools();
-            } else {
-                editor.setDrawingTool(DrawingTool.RECTANGLE);
-            }
-            updateToolHighlight();
-            onDirty.run();
-        });
-        host.addDrawable(rectangleBtn);
-        cx += 18 + gap;
+        if (!compactMode) {
+            rectangleBtn = new IconButton(cx, y, 18, btnH, IconUtils.ICON_RECTANGLE,
+                    Text.translatable("tooltip.bookeditor.rectangle"), b -> {
+                if (editor.getCurrentDrawingTool() == DrawingTool.RECTANGLE) {
+                    editor.deactivateAllTools();
+                } else {
+                    editor.setDrawingTool(DrawingTool.RECTANGLE);
+                }
+                updateToolHighlight();
+                onDirty.run();
+            });
+            host.addDrawable(rectangleBtn);
+            cx += 18 + gap;
 
-        circleBtn = new IconButton(cx, y, 18, btnH, IconUtils.ICON_CIRCLE,
-                Text.translatable("tooltip.bookeditor.circle"), b -> {
-            if (editor.getCurrentDrawingTool() == DrawingTool.CIRCLE) {
-                editor.deactivateAllTools();
-            } else {
-                editor.setDrawingTool(DrawingTool.CIRCLE);
-            }
-            updateToolHighlight();
-            onDirty.run();
-        });
-        host.addDrawable(circleBtn);
-        cx += 18 + gap;
+            circleBtn = new IconButton(cx, y, 18, btnH, IconUtils.ICON_CIRCLE,
+                    Text.translatable("tooltip.bookeditor.circle"), b -> {
+                if (editor.getCurrentDrawingTool() == DrawingTool.CIRCLE) {
+                    editor.deactivateAllTools();
+                } else {
+                    editor.setDrawingTool(DrawingTool.CIRCLE);
+                }
+                updateToolHighlight();
+                onDirty.run();
+            });
+            host.addDrawable(circleBtn);
+            cx += 18 + gap;
+        }
 
         eraserBtn = new IconButton(cx, y, 18, btnH, IconUtils.ICON_ERASER,
                 Text.translatable("tooltip.bookeditor.eraser"), b -> {
@@ -224,16 +231,20 @@ public class CanvasToolbar {
         host.addDrawable(deletePageBtn);
         cx += 18 + gap;
 
-        signBtn = new IconButton(cx, y, 18, btnH, IconUtils.ICON_SIGN,
-                Text.translatable("tooltip.bookeditor.sign"), b -> signAction.run());
-        host.addDrawable(signBtn);
-        cx += 18;
+        if (!compactMode) {
+            signBtn = new IconButton(cx, y, 18, btnH, IconUtils.ICON_SIGN,
+                    Text.translatable("tooltip.bookeditor.sign"), b -> signAction.run());
+            host.addDrawable(signBtn);
+            cx += 18;
+        }
         pagesEndX = cx;
 
         updateToolHighlight();
     }
 
     public void renderSectionHeaders(DrawContext ctx, int textColor) {
+        if (compactMode) return;
+
         int labelY = y - 14;
 
         ctx.drawText(host.getTextRenderer(), Text.translatable("toolbar.bookeditor.text"),
@@ -250,6 +261,8 @@ public class CanvasToolbar {
     }
 
     public void renderSectionBoxes(DrawContext ctx) {
+        if (compactMode) return;
+
         int boxY = y - 2;
         int boxH = btnH + 4;
 
@@ -261,9 +274,7 @@ public class CanvasToolbar {
 
     public void updateToolHighlight() {
         DrawingTool currentTool = editor.getCurrentDrawingTool();
-        boolean isTextBoxTool = editor.isTextBoxToolActive();
 
-        if (textBoxBtn != null) textBoxBtn.setSelected(isTextBoxTool);
         if (brushBtn != null) brushBtn.setSelected(currentTool == DrawingTool.BRUSH);
         if (sprayBtn != null) sprayBtn.setSelected(currentTool == DrawingTool.SPRAY);
         if (lineBtn != null) lineBtn.setSelected(currentTool == DrawingTool.LINE);
@@ -298,6 +309,11 @@ public class CanvasToolbar {
         if (toolSizeField != null) toolSizeField.setText(Integer.toString(px));
         editor.setToolSize(px);
     }
+
+    public void setTextBoxBgColor(int argb) {
+        if (textBoxBgColorBtn != null) textBoxBgColorBtn.setArgb(argb);
+    }
+
     public void setToolColor(int argb) {
         if (toolColorBtn != null) toolColorBtn.setArgb(argb);
     }

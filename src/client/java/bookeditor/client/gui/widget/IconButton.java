@@ -52,24 +52,18 @@ public class IconButton extends ButtonWidget {
         int w = width;
         int h = height;
 
-        ctx.fill(x + 1, y + h, x + w - 1, y + h + 1, 0x33000000);
+        ctx.fill(x + 1, y + h, x + w - 1, y + h + 1, SHADOW);
 
         int bgColor = selected ? BG_SELECTED : interpolateColor(BG_COLOR, BG_HOVER, hoverProgress);
         ctx.fill(x, y, x + w, y + h, bgColor);
 
-        int borderColor = selected ? BORDER_SELECTED : BORDER_NORMAL;
-        if (selected) {
-            ctx.fill(x, y, x + w, y + 2, borderColor);
-            ctx.fill(x, y + h - 2, x + w, y + h, borderColor);
-            ctx.fill(x, y, x + 2, y + h, borderColor);
-            ctx.fill(x + w - 2, y, x + w, y + h, borderColor);
-        } else {
-            int bw = isHovering ? 2 : 1;
-            ctx.fill(x, y, x + w, y + bw, borderColor);
-            ctx.fill(x, y + h - bw, x + w, y + h, borderColor);
-            ctx.fill(x, y, x + bw, y + h, borderColor);
-            ctx.fill(x + w - bw, y, x + w, y + h, borderColor);
-        }
+        int borderColor = selected ? BORDER_SELECTED : (isHovering ? 0xFF666666 : BORDER_NORMAL);
+        int bw = 1;
+
+        ctx.fill(x, y, x + w, y + bw, borderColor);
+        ctx.fill(x, y + h - bw, x + w, y + h, borderColor);
+        ctx.fill(x, y, x + bw, y + h, borderColor);
+        ctx.fill(x + w - bw, y, x + w, y + h, borderColor);
 
         int iconSize = 16;
         int renderSize = (int) (width * 0.7);
@@ -82,9 +76,6 @@ public class IconButton extends ButtonWidget {
         ctx.getMatrices().scale(scale, scale, 1.0f);
 
         int tint = active ? 0xFFFFFFFF : 0xFF808080;
-        if (isHovering && active) {
-            tint = 0xFFFFFFFF;
-        }
         ctx.setShaderColor(
                 ((tint >> 16) & 0xFF) / 255.0f,
                 ((tint >> 8) & 0xFF) / 255.0f,

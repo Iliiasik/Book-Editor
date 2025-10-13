@@ -33,6 +33,8 @@ public class FormattingToolbar {
     private int alignEndX;
     private int colorEndX;
 
+    private boolean compactMode = false;
+
     public FormattingToolbar(WidgetHost host,
                              RichTextEditorWidget editor,
                              Runnable onDirty,
@@ -46,22 +48,28 @@ public class FormattingToolbar {
         this.gap = gap;
     }
 
+    public void setCompactMode(boolean compact) {
+        this.compactMode = compact;
+    }
+
     public void build() {
         int cx = x;
 
-        undoBtn = new IconButton(cx, y, 18, btnH, IconUtils.ICON_UNDO,
-                Text.translatable("tooltip.bookeditor.undo"), b -> {
-            if (editor.undo()) onDirty.run();
-        });
-        host.addDrawable(undoBtn);
-        cx += 18 + gap;
+        if (!compactMode) {
+            undoBtn = new IconButton(cx, y, 18, btnH, IconUtils.ICON_UNDO,
+                    Text.translatable("tooltip.bookeditor.undo"), b -> {
+                if (editor.undo()) onDirty.run();
+            });
+            host.addDrawable(undoBtn);
+            cx += 18 + gap;
 
-        redoBtn = new IconButton(cx, y, 18, btnH, IconUtils.ICON_REDO,
-                Text.translatable("tooltip.bookeditor.redo"), b -> {
-            if (editor.redo()) onDirty.run();
-        });
-        host.addDrawable(redoBtn);
-        cx += 18 + 10;
+            redoBtn = new IconButton(cx, y, 18, btnH, IconUtils.ICON_REDO,
+                    Text.translatable("tooltip.bookeditor.redo"), b -> {
+                if (editor.redo()) onDirty.run();
+            });
+            host.addDrawable(redoBtn);
+            cx += 18 + 10;
+        }
         historyEndX = cx;
 
         boldBtn = new IconButton(cx, y, 18, btnH, IconUtils.ICON_BOLD,
@@ -95,17 +103,19 @@ public class FormattingToolbar {
         cx += 18 + 10;
         stylingEndX = cx;
 
-        decreaseSizeBtn = new IconButton(cx, y, 18, btnH, IconUtils.ICON_DECREASE_SIZE,
-                Text.translatable("tooltip.bookeditor.decrease_size"), b -> {
-            float currentSize = editor.getSize();
-            float newSize = Math.max(0.5f, currentSize - 0.1f);
-            editor.setSize(newSize);
-            editor.applyStyleToSelection();
-            sizeField.setText(String.format("%.1f", newSize));
-            onDirty.run();
-        });
-        host.addDrawable(decreaseSizeBtn);
-        cx += 18 + gap;
+        if (!compactMode) {
+            decreaseSizeBtn = new IconButton(cx, y, 18, btnH, IconUtils.ICON_DECREASE_SIZE,
+                    Text.translatable("tooltip.bookeditor.decrease_size"), b -> {
+                float currentSize = editor.getSize();
+                float newSize = Math.max(0.5f, currentSize - 0.1f);
+                editor.setSize(newSize);
+                editor.applyStyleToSelection();
+                sizeField.setText(String.format("%.1f", newSize));
+                onDirty.run();
+            });
+            host.addDrawable(decreaseSizeBtn);
+            cx += 18 + gap;
+        }
 
         sizeField = new NumericTextField(host.getTextRenderer(), cx, y, 40, btnH, Text.translatable("tooltip.bookeditor.text_size"));
         sizeField.setText("1.0");
@@ -124,17 +134,21 @@ public class FormattingToolbar {
         host.addDrawable(sizeField);
         cx += 40 + gap;
 
-        increaseSizeBtn = new IconButton(cx, y, 18, btnH, IconUtils.ICON_INCREASE_SIZE,
-                Text.translatable("tooltip.bookeditor.increase_size"), b -> {
-            float currentSize = editor.getSize();
-            float newSize = Math.min(3.0f, currentSize + 0.1f);
-            editor.setSize(newSize);
-            editor.applyStyleToSelection();
-            sizeField.setText(String.format("%.1f", newSize));
-            onDirty.run();
-        });
-        host.addDrawable(increaseSizeBtn);
-        cx += 18 + 10;
+        if (!compactMode) {
+            increaseSizeBtn = new IconButton(cx, y, 18, btnH, IconUtils.ICON_INCREASE_SIZE,
+                    Text.translatable("tooltip.bookeditor.increase_size"), b -> {
+                float currentSize = editor.getSize();
+                float newSize = Math.min(3.0f, currentSize + 0.1f);
+                editor.setSize(newSize);
+                editor.applyStyleToSelection();
+                sizeField.setText(String.format("%.1f", newSize));
+                onDirty.run();
+            });
+            host.addDrawable(increaseSizeBtn);
+            cx += 18 + 10;
+        } else {
+            cx += 10;
+        }
         sizeEndX = cx;
 
         alignLeftBtn = new IconButton(cx, y, 18, btnH, IconUtils.ICON_ALIGN_LEFT,
@@ -176,10 +190,14 @@ public class FormattingToolbar {
     }
 
     public void renderSectionHeaders(DrawContext ctx, int textColor) {
+        if (compactMode) return;
+
         int labelY = y - 14;
 
-        ctx.drawText(host.getTextRenderer(), Text.translatable("toolbar.bookeditor.history"),
-                x, labelY, textColor, false);
+        if (undoBtn != null) {
+            ctx.drawText(host.getTextRenderer(), Text.translatable("toolbar.bookeditor.history"),
+                    x, labelY, textColor, false);
+        }
 
         ctx.drawText(host.getTextRenderer(), Text.translatable("toolbar.bookeditor.styling"),
                 historyEndX, labelY, textColor, false);
@@ -195,10 +213,14 @@ public class FormattingToolbar {
     }
 
     public void renderSectionBoxes(DrawContext ctx) {
+        if (compactMode) return;
+
         int boxY = y - 2;
         int boxH = btnH + 4;
 
-        ctx.fill(x - 2, boxY, historyEndX - 5, boxY + boxH, 0x33FFFFFF);
+        if (undoBtn != null) {
+            ctx.fill(x - 2, boxY, historyEndX - 5, boxY + boxH, 0x33FFFFFF);
+        }
         ctx.fill(historyEndX - 2, boxY, stylingEndX - 5, boxY + boxH, 0x33FFFFFF);
         ctx.fill(stylingEndX - 2, boxY, sizeEndX - 5, boxY + boxH, 0x33FFFFFF);
         ctx.fill(sizeEndX - 2, boxY, alignEndX - 5, boxY + boxH, 0x33FFFFFF);
@@ -229,5 +251,13 @@ public class FormattingToolbar {
     public void setInitialTextColor(int argb) {
         if (textColorBtn != null) textColorBtn.setArgb(argb);
         editor.setColor(argb);
+    }
+
+    public void setFontSizeField(float s) {
+        if (sizeField != null) sizeField.setText(String.format("%.1f", s));
+    }
+
+    public void updateTextColor(int argb) {
+        if (textColorBtn != null) textColorBtn.setArgb(argb);
     }
 }

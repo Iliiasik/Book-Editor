@@ -25,6 +25,7 @@ public class NavigationBar {
     private NumericTextField pageField;
     private IconButton goBtn;
     private ModernButton nextBtn;
+    private boolean compactMode = false;
 
     public NavigationBar(WidgetHost host, int x, int y, int btnH,
                          IntSupplier getCurrentPage, IntSupplier getTotalPages,
@@ -40,6 +41,10 @@ public class NavigationBar {
         this.nextPage = nextPage;
     }
 
+    public void setCompactMode(boolean compact) {
+        this.compactMode = compact;
+    }
+
     public void build() {
         int cx = x;
 
@@ -53,7 +58,9 @@ public class NavigationBar {
         host.addDrawable(pageField);
         cx += 36 + 3;
 
-        cx += 35;
+        if (!compactMode) {
+            cx += 35;
+        }
 
         goBtn = new IconButton(cx, y, 18, btnH, IconUtils.ICON_APPLY,
                 Text.translatable("tooltip.bookeditor.go_to_page"), b -> handlePageFieldSubmit());

@@ -21,6 +21,7 @@ import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
+import org.lwjgl.glfw.GLFW;
 
 public class WysiwygBookScreen extends Screen implements WidgetHost {
 
@@ -59,6 +60,10 @@ public class WysiwygBookScreen extends Screen implements WidgetHost {
         }
     }
 
+    private boolean isSmallScreen() {
+        return this.width < 800;
+    }
+
     @Override
     protected void init() {
         clearChildren();
@@ -66,7 +71,7 @@ public class WysiwygBookScreen extends Screen implements WidgetHost {
         int y = MARGIN;
 
         if (!data.signed) {
-            int titleW = Math.max(220, this.width - MARGIN * 2 - 160);
+            int titleW = Math.max(220, this.width - MARGIN * 2 - (isSmallScreen() ? 100 : 160));
             titleField = new ModernTextField(textRenderer, MARGIN, y, titleW, BTN_H, Text.translatable("screen.bookeditor.book_title"));
             titleField.setText(data.title);
             addDrawableChild(titleField);
@@ -74,7 +79,7 @@ public class WysiwygBookScreen extends Screen implements WidgetHost {
             titleField = null;
         }
 
-        int navBlockW = 20 + 3 + 36 + 3 + 35 + 18 + 3 + 20;
+        int navBlockW = isSmallScreen() ? (20 + 3 + 36 + 3 + 18 + 3 + 20) : (20 + 3 + 36 + 3 + 35 + 18 + 3 + 20);
         int navX = this.width - MARGIN - navBlockW;
         int navY = y;
 
@@ -91,18 +96,25 @@ public class WysiwygBookScreen extends Screen implements WidgetHost {
         );
         navigationBar.build();
 
+        if (isSmallScreen()) {
+            navigationBar.setCompactMode(true);
+        }
+
         y += BTN_H + 4;
 
         int x = MARGIN;
-        toolsPrevBtn = addDrawableChild(new ToolbarNavButton(x, y, 18, BTN_H, Text.literal("◀"), b -> {
-            toolsPage = (toolsPage - 1 + toolsPages) % toolsPages;
-            updateToolsVisibility();
-        }));
-        x += 18 + GAP;
-        toolsNextBtn = addDrawableChild(new ToolbarNavButton(x, y, 18, BTN_H, Text.literal("▶"), b -> {
-            toolsPage = (toolsPage + 1) % toolsPages;
-            updateToolsVisibility();
-        }));
+
+        if (!isSmallScreen()) {
+            toolsPrevBtn = addDrawableChild(new ToolbarNavButton(x, y, 18, BTN_H, Text.literal("◀"), b -> {
+                toolsPage = (toolsPage - 1 + toolsPages) % toolsPages;
+                updateToolsVisibility();
+            }));
+            x += 18 + GAP;
+            toolsNextBtn = addDrawableChild(new ToolbarNavButton(x, y, 18, BTN_H, Text.literal("▶"), b -> {
+                toolsPage = (toolsPage + 1) % toolsPages;
+                updateToolsVisibility();
+            }));
+        }
 
         int rowY = y;
         toolbarY = rowY;
@@ -118,12 +130,13 @@ public class WysiwygBookScreen extends Screen implements WidgetHost {
                 this::onDirty
         );
 
-        int toolsStartX = MARGIN + 18 + GAP + 18 + GAP;
+        int toolsStartX = isSmallScreen() ? MARGIN : (MARGIN + 18 + GAP + 18 + GAP);
         formattingToolbar = new FormattingToolbar(
                 this, editor, this::onDirty,
                 toolsStartX, rowY, BTN_H, GAP
         );
         formattingToolbar.build();
+        formattingToolbar.setCompactMode(isSmallScreen());
 
         canvasToolbar = new CanvasToolbar(
                 this,
@@ -137,6 +150,7 @@ public class WysiwygBookScreen extends Screen implements WidgetHost {
                 toolsStartX, rowY, BTN_H, GAP
         );
         canvasToolbar.build(data.pages.get(page).bgArgb);
+        canvasToolbar.setCompactMode(isSmallScreen());
 
         editor.setContent(data.pages.get(page));
         formattingToolbar.setInitialTextColor(0xFF202020);
@@ -286,6 +300,17 @@ public class WysiwygBookScreen extends Screen implements WidgetHost {
         }
 
         renderColorPickerDropdowns(ctx, mouseX, mouseY, delta);
+
+        syncToolbarWithSelection();
+    }
+
+    private void syncToolbarWithSelection() {
+        if (editor != null && formattingToolbar != null) {
+            editor.syncStylesFromSelection();
+            formattingToolbar.refreshFormatButtons();
+            formattingToolbar.setFontSizeField(editor.getSize());
+            formattingToolbar.updateTextColor(editor.getColor());
+        }
     }
 
     private void renderColorPickerDropdowns(DrawContext ctx, int mouseX, int mouseY, float delta) {
@@ -311,30 +336,47 @@ public class WysiwygBookScreen extends Screen implements WidgetHost {
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (!data.signed && hasControlDown()) {
-            if (keyCode == 66) {
+            if (keyCode == GLFW.GLFW_KEY_B) {
                 editor.setBold(!editor.isBold());
                 if (formattingToolbar != null) formattingToolbar.refreshFormatButtons();
+                editor.applyStyleToSelection();
                 onDirty();
                 return true;
-            } else if (keyCode == 73) {
+            } else if (keyCode == GLFW.GLFW_KEY_I) {
                 editor.setItalic(!editor.isItalic());
                 if (formattingToolbar != null) formattingToolbar.refreshFormatButtons();
+                editor.applyStyleToSelection();
                 onDirty();
                 return true;
-            } else if (keyCode == 85) {
+            } else if (keyCode == GLFW.GLFW_KEY_U) {
                 editor.setUnderline(!editor.isUnderline());
                 if (formattingToolbar != null) formattingToolbar.refreshFormatButtons();
+                editor.applyStyleToSelection();
                 onDirty();
                 return true;
-            } else if (keyCode == 90) {
+            } else if (keyCode == GLFW.GLFW_KEY_Z) {
                 if (editor.undo()) onDirty();
                 return true;
-            } else if (keyCode == 89) {
+            } else if (keyCode == GLFW.GLFW_KEY_Y) {
                 if (editor.redo()) onDirty();
+                return true;
+            } else if (keyCode == GLFW.GLFW_KEY_C) {
+                editor.copySelection();
+                return true;
+            } else if (keyCode == GLFW.GLFW_KEY_V) {
+                editor.paste();
+                onDirty();
+                return true;
+            } else if (keyCode == GLFW.GLFW_KEY_X) {
+                editor.cutSelection();
+                onDirty();
+                return true;
+            } else if (keyCode == GLFW.GLFW_KEY_A) {
+                editor.selectAll();
                 return true;
             }
         }
-        if (!data.signed && (keyCode == 257 || keyCode == 335) && hasControlDown()) {
+        if (!data.signed && (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) && hasControlDown()) {
             sign();
             return true;
         }

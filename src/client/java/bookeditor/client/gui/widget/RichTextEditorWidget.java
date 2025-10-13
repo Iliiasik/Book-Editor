@@ -574,4 +574,101 @@ public class RichTextEditorWidget extends ClickableWidget {
     @Override
     protected void appendClickableNarrations(NarrationMessageBuilder builder) {
     }
+
+    private String clipboard = "";
+
+    public void copySelection() {
+        if (textBoxCaret.hasSelection()) {
+            int selectedIdx = textBoxInteraction.getSelectedTextBoxIndex();
+            if (selectedIdx >= 0 && selectedIdx < page.nodes.size()) {
+                var node = page.nodes.get(selectedIdx);
+                if (node instanceof BookData.TextBoxNode box) {
+                    int selStart = textBoxCaret.selectionStart();
+                    int selEnd = textBoxCaret.selectionEnd();
+                    clipboard = box.getFullText().substring(selStart, Math.min(selEnd, box.getFullText().length()));
+                }
+            }
+        }
+    }
+
+    public void cutSelection() {
+        copySelection();
+        if (textBoxCaret.hasSelection()) {
+            pushSnapshotOnce();
+            int selectedIdx = textBoxInteraction.getSelectedTextBoxIndex();
+            if (selectedIdx >= 0 && selectedIdx < page.nodes.size()) {
+                var node = page.nodes.get(selectedIdx);
+                if (node instanceof BookData.TextBoxNode box) {
+                    textBoxOps.backspace(box, textBoxCaret);
+                }
+            }
+            notifyDirty();
+        }
+    }
+
+    public void paste() {
+        if (!editable || page == null || mode != EditorMode.TEXT_MODE) return;
+        if (clipboard.isEmpty()) return;
+
+        int selectedIdx = textBoxInteraction.getSelectedTextBoxIndex();
+        if (selectedIdx >= 0 && selectedIdx < page.nodes.size()) {
+            var node = page.nodes.get(selectedIdx);
+            if (node instanceof BookData.TextBoxNode box) {
+                pushSnapshotOnce();
+                for (char ch : clipboard.toCharArray()) {
+                    textBoxOps.insertChar(box, textBoxCaret, style(), ch);
+                }
+                notifyDirty();
+            }
+        }
+    }
+
+    public void selectAll() {
+        if (mode != EditorMode.TEXT_MODE) return;
+
+        int selectedIdx = textBoxInteraction.getSelectedTextBoxIndex();
+        if (selectedIdx >= 0 && selectedIdx < page.nodes.size()) {
+            var node = page.nodes.get(selectedIdx);
+            if (node instanceof BookData.TextBoxNode box) {
+                textBoxCaret.selectAll(box);
+            }
+        }
+    }
+
+    public void syncStylesFromSelection() {
+        if (textBoxCaret.hasSelection()) {
+            int selectedIdx = textBoxInteraction.getSelectedTextBoxIndex();
+            if (selectedIdx >= 0 && selectedIdx < page.nodes.size()) {
+                var node = page.nodes.get(selectedIdx);
+                if (node instanceof BookData.TextBoxNode box) {
+                    int selStart = textBoxCaret.selectionStart();
+                    if (selStart < box.getFullText().length()) {
+                        BookData.TextSegment segment = getSegmentAtPosition(box, selStart);
+                        if (segment != null) {
+                            this.bold = segment.bold;
+                            this.italic = segment.italic;
+                            this.underline = segment.underline;
+                            this.argb = segment.argb;
+                            this.size = segment.size;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private BookData.TextSegment getSegmentAtPosition(BookData.TextBoxNode box, int pos) {
+        int currentPos = 0;
+        for (BookData.TextSegment seg : box.segments) {
+            if (pos >= currentPos && pos < currentPos + seg.text.length()) {
+                return seg;
+            }
+            currentPos += seg.text.length();
+        }
+        return box.segments.isEmpty() ? null : box.segments.get(box.segments.size() - 1);
+    }
+
+    public int getColor() {
+        return argb;
+    }
 }
