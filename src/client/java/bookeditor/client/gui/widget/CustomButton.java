@@ -5,17 +5,23 @@ import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
 
-public class ToolbarNavButton extends ButtonWidget {
+public class CustomButton extends ButtonWidget {
     private float hoverProgress = 0.0f;
     private long lastFrameTime = System.currentTimeMillis();
 
-    private static final int BG_COLOR = 0xFF3C3C3C;
-    private static final int BG_HOVER = 0xFF505050;
-    private static final int BORDER_COLOR = 0xFF007ACC;
-    private static final int TEXT_COLOR = 0xFFE0E0E0;
+    private static final int PRIMARY_COLOR = 0xFF4A90E2;
+    private static final int PRIMARY_HOVER = 0xFF5BA3F5;
+    private static final int BORDER_COLOR = 0xFF357ABD;
+    private static final int TEXT_COLOR = 0xFFFFFFFF;
+    private static final int SHADOW_COLOR = 0x44000000;
 
-    public ToolbarNavButton(int x, int y, int width, int height, Text message, PressAction onPress) {
+    public CustomButton(int x, int y, int width, int height, Text message, PressAction onPress) {
         super(x, y, width, height, message, onPress, DEFAULT_NARRATION_SUPPLIER);
+    }
+
+    public CustomButton(int x, int y, int width, int height, Text message, Text tooltip, PressAction onPress) {
+        this(x, y, width, height, message, onPress);
+        this.setTooltip(Tooltip.of(tooltip));
     }
 
     @Override
@@ -27,31 +33,38 @@ public class ToolbarNavButton extends ButtonWidget {
         boolean isHovering = this.isHovered();
 
         if (isHovering && hoverProgress < 1.0f) {
-            hoverProgress = Math.min(1.0f, hoverProgress + deltaTime * 5.0f);
+            hoverProgress = Math.min(1.0f, hoverProgress + deltaTime * 4.0f);
         } else if (!isHovering && hoverProgress > 0.0f) {
-            hoverProgress = Math.max(0.0f, hoverProgress - deltaTime * 5.0f);
+            hoverProgress = Math.max(0.0f, hoverProgress - deltaTime * 4.0f);
         }
+
+        int currentColor = interpolateColor(PRIMARY_COLOR, PRIMARY_HOVER, hoverProgress);
 
         int x = getX();
         int y = getY();
         int w = width;
         int h = height;
 
-        int bgColor = active ? interpolateColor(BG_COLOR, BG_HOVER, hoverProgress) : 0xFF2A2A2A;
-
-        ctx.fill(x, y, x + w, y + h, bgColor);
-
         if (active) {
-            ctx.fill(x, y, x + w, y + 2, BORDER_COLOR);
-            ctx.fill(x, y + h - 2, x + w, y + h, BORDER_COLOR);
-            ctx.fill(x, y, x + 2, y + h, BORDER_COLOR);
-            ctx.fill(x + w - 2, y, x + w, y + h, BORDER_COLOR);
+            ctx.fill(x + 1, y + h, x + w, y + h + 2, SHADOW_COLOR);
+
+            ctx.fill(x, y, x + w, y + h, currentColor);
+
+            ctx.fill(x, y, x + w, y + 1, BORDER_COLOR);
+            ctx.fill(x, y + h - 1, x + w, y + h, BORDER_COLOR);
+            ctx.fill(x, y, x + 1, y + h, BORDER_COLOR);
+            ctx.fill(x + w - 1, y, x + w, y + h, BORDER_COLOR);
+
+            int topGradient = addAlpha(0xFFFFFFFF, 0.15f);
+            ctx.fill(x + 1, y + 1, x + w - 1, y + h / 2, topGradient);
+        } else {
+            ctx.fill(x, y, x + w, y + h, 0xFF666666);
         }
 
         int textX = x + w / 2;
         int textY = y + (h - 8) / 2;
         ctx.drawCenteredTextWithShadow(this.getTextRenderer(), this.getMessage(), textX, textY,
-                active ? TEXT_COLOR : 0xFF666666);
+                active ? TEXT_COLOR : 0xFFA0A0A0);
     }
 
     private int interpolateColor(int color1, int color2, float t) {
@@ -71,6 +84,11 @@ public class ToolbarNavButton extends ButtonWidget {
         int b = (int) (b1 + (b2 - b1) * t);
 
         return (a << 24) | (r << 16) | (g << 8) | b;
+    }
+
+    private int addAlpha(int color, float alpha) {
+        int a = (int) (255 * alpha);
+        return (a << 24) | (color & 0xFFFFFF);
     }
 
     private net.minecraft.client.font.TextRenderer getTextRenderer() {

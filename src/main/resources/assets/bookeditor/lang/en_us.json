@@ -62,6 +62,6 @@
   "toolbar.bookeditor.canvas": "Canvas",
   "toolbar.bookeditor.pages": "Pages",
   "screen.bookeditor.url_label": "Image URL:",
-  "screen.bookeditor.width_label": "Width:",
-  "screen.bookeditor.height_label": "Height:"
+  "screen.bookeditor.width_label": "Width",
+  "screen.bookeditor.height_label": "Height"
 }
