@@ -30,29 +30,36 @@ public class ImageInsertScreen extends Screen {
 
     @Override
     protected void init() {
+        int panelW = 260;
+        int panelH = 120;
         int centerX = this.width / 2;
-        int y = this.height / 2 - 50;
+        int panelX = centerX - panelW / 2;
+        int panelY = this.height / 2 - panelH / 2;
 
-        urlField = new CustomTextField(this.textRenderer, centerX - 150, y, 300, 20, Text.literal(""));
+        int y = panelY + 18;
+
+        urlField = new CustomTextField(this.textRenderer, panelX + 14, y, panelW - 28, 18, Text.literal(""));
         urlField.setMaxLength(2048);
         addDrawableChild(urlField);
 
-        y += 35;
+        y += 25;
 
-        wField = new NumericTextField(this.textRenderer, centerX - 150, y, 140, 20, Text.literal(""));
+        int labelYOffset = 17;
+
+        wField = new NumericTextField(this.textRenderer, panelX + 14, y + labelYOffset, (panelW - 36) / 2, 18, Text.literal(""));
         wField.setText("64");
         addDrawableChild(wField);
 
-        hField = new NumericTextField(this.textRenderer, centerX + 10, y, 140, 20, Text.literal(""));
+        hField = new NumericTextField(this.textRenderer, panelX + 22 + (panelW - 36) / 2, y + labelYOffset, (panelW - 36) / 2, 18, Text.literal(""));
         hField.setText("64");
         addDrawableChild(hField);
 
-        y += 30;
+        y += labelYOffset + 18 + 6;
 
-        addDrawableChild(new CustomButton(centerX - 150, y, 140, 22,
+        addDrawableChild(new CustomButton(panelX + 14, y, (panelW - 36) / 2, 20,
                 Text.translatable("gui.cancel"), b -> close()));
 
-        addDrawableChild(new CustomButton(centerX + 10, y, 140, 22,
+        addDrawableChild(new CustomButton(panelX + 22 + (panelW - 36) / 2, y, (panelW - 36) / 2, 20,
                 Text.translatable("screen.bookeditor.add"), b -> {
             try {
                 int w = Integer.parseInt(wField.getText().trim());
@@ -71,32 +78,33 @@ public class ImageInsertScreen extends Screen {
     public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
         this.renderBackground(ctx);
 
-        int panelX = this.width / 2 - 160;
-        int panelY = this.height / 2 - 65;
-        int panelW = 320;
-        int panelH = 130;
+        int panelW = 260;
+        int panelH = 120;
+        int panelX = this.width / 2 - panelW / 2;
+        int panelY = this.height / 2 - panelH / 2;
 
         ctx.fill(panelX - 2, panelY - 2, panelX + panelW + 2, panelY + panelH + 2, 0xFF1E1E1E);
         ctx.fill(panelX, panelY, panelX + panelW, panelY + panelH, 0xFF2D2D30);
         ctx.fill(panelX, panelY, panelX + panelW, panelY + 2, 0xFF007ACC);
 
-        int titleY = panelY - 24;
+        int titleY = panelY - 10;
         ctx.drawCenteredTextWithShadow(this.textRenderer, this.getTitle(), this.width / 2, titleY, 0xFFFFFFFF);
 
-        int urlLabelY = this.height / 2 - 63;
-        ctx.drawText(this.textRenderer, Text.translatable("screen.bookeditor.url_label"),
-                this.width / 2 - 150, urlLabelY, 0xFFE0E0E0, false);
+        int urlLabelY = panelY + 6;
+        Text urlLabel = Text.translatable("screen.bookeditor.url_label");
+        int urlLabelWidth = this.textRenderer.getWidth(urlLabel);
+        ctx.drawText(this.textRenderer, urlLabel, this.width / 2 - urlLabelWidth / 2, urlLabelY, 0xFFE0E0E0, false);
 
-        int sizeLabelY = this.height / 2 - 15 - 12;
+        int sizeLabelY = panelY + 50;
 
         Text widthLabel = Text.translatable("screen.bookeditor.width_label");
         int widthLabelWidth = this.textRenderer.getWidth(widthLabel);
-        int widthLabelX = this.width / 2 - 150 + (140 - widthLabelWidth) / 2;
+        int widthLabelX = panelX + 14 + ((panelW - 36) / 2 - widthLabelWidth) / 2;
         ctx.drawText(this.textRenderer, widthLabel, widthLabelX, sizeLabelY, 0xFFE0E0E0, false);
 
         Text heightLabel = Text.translatable("screen.bookeditor.height_label");
         int heightLabelWidth = this.textRenderer.getWidth(heightLabel);
-        int heightLabelX = this.width / 2 + 10 + (140 - heightLabelWidth) / 2;
+        int heightLabelX = panelX + 22 + (panelW - 36) / 2 + ((panelW - 36) / 2 - heightLabelWidth) / 2;
         ctx.drawText(this.textRenderer, heightLabel, heightLabelX, sizeLabelY, 0xFFE0E0E0, false);
 
         super.render(ctx, mouseX, mouseY, delta);

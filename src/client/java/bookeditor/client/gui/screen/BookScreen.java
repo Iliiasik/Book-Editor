@@ -21,7 +21,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import org.lwjgl.glfw.GLFW;
 
-public class WysiwygBookScreen extends Screen implements WidgetHost {
+public class BookScreen extends Screen implements WidgetHost {
 
     private static final int MARGIN = 10;
     private static final int GAP = 5;
@@ -37,7 +37,7 @@ public class WysiwygBookScreen extends Screen implements WidgetHost {
     private BookNavigator bookNavigator;
     private AdaptiveToolbar toolbar;
 
-    public WysiwygBookScreen(net.minecraft.item.ItemStack stack, Hand hand) {
+    public BookScreen(net.minecraft.item.ItemStack stack, Hand hand) {
         super(Text.translatable("screen.bookeditor.title"));
         this.stack = stack;
         this.hand = hand;
@@ -197,7 +197,7 @@ public class WysiwygBookScreen extends Screen implements WidgetHost {
         super.render(ctx, mouseX, mouseY, delta);
 
         if (data.signed) {
-            AuthorBadgeRenderer.renderBadge(ctx, textRenderer, this.width, MARGIN, BTN_H, data);
+            AuthorBadgeRenderer.renderBadge(ctx, textRenderer, this.width, MARGIN + 10, BTN_H, data);
         }
 
         if (bookNavigator != null) {
