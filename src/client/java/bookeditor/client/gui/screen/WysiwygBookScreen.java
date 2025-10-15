@@ -216,6 +216,18 @@ public class WysiwygBookScreen extends Screen implements WidgetHost {
     }
 
     @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        for (var child : this.children()) {
+            if (child instanceof ColorPickerDropdown dropdown && dropdown.isExpanded()) {
+                if (dropdown.mouseClicked(mouseX, mouseY, button)) {
+                    return true;
+                }
+            }
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
     public void resize(MinecraftClient client, int width, int height) {
         super.resize(client, width, height);
     }
