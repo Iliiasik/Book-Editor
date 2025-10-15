@@ -1,6 +1,6 @@
 package bookeditor.client;
 
-import bookeditor.client.gui.screen.WysiwygBookScreen;
+import bookeditor.client.gui.screen.BookScreen;
 import bookeditor.data.BookData;
 import bookeditor.platform.Services;
 import net.fabricmc.api.ClientModInitializer;
@@ -19,7 +19,7 @@ public class BookeditorClient implements ClientModInitializer {
             MinecraftClient mc = MinecraftClient.getInstance();
             if (mc.player == null) return;
             BookData.ensureDefaults(stack, mc.player);
-            mc.setScreen(new WysiwygBookScreen(stack, hand));
+            mc.setScreen(new BookScreen(stack, hand));
         };
 
         Item creativeBook = Registries.ITEM.get(new Identifier("bookeditor", "creative_book"));

@@ -1,16 +1,20 @@
 package bookeditor.client.gui.widget;
 
-import bookeditor.client.editor.brush.BrushTool;
-import bookeditor.client.editor.caret.CaretSelectionModel;
 import bookeditor.client.editor.history.HistoryManager;
 import bookeditor.client.editor.image.ImageInteraction;
-import bookeditor.client.editor.render.CaretPainter;
-import bookeditor.client.editor.render.ImageRenderer;
-import bookeditor.client.editor.render.TextLayoutRenderer;
+import bookeditor.client.editor.input.EditorInputHandler;
+import bookeditor.client.editor.input.EditorMouseHandler;
+import bookeditor.client.editor.mode.EditorMode;
+import bookeditor.client.editor.render.EditorRenderer;
 import bookeditor.client.editor.text.StyleParams;
-import bookeditor.client.editor.text.TextEditOps;
-import bookeditor.client.editor.text.TextHitTester;
-import bookeditor.client.util.ImageCache;
+import bookeditor.client.editor.textbox.TextBoxCaret;
+import bookeditor.client.editor.textbox.TextBoxCreationTool;
+import bookeditor.client.editor.textbox.TextBoxEditOps;
+import bookeditor.client.editor.textbox.TextBoxInteraction;
+import bookeditor.client.editor.textbox.TextBoxRenderer;
+import bookeditor.client.editor.tools.AdvancedDrawingTool;
+import bookeditor.client.editor.tools.DrawingTool;
+import bookeditor.client.editor.tools.EraserTool;
 import bookeditor.data.BookData;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
@@ -19,13 +23,12 @@ import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
-import static net.minecraft.client.gui.screen.Screen.hasControlDown;
-
 public class RichTextEditorWidget extends ClickableWidget {
     private static final int PAD_OUT = 8;
     private static final int PAD_IN = 8;
     private static final int LOGICAL_W = 960;
     private static final int LOGICAL_H = 600;
+    private static final int MAX_TEXTBOX_CHARS = 5000;
 
     private final TextRenderer textRenderer;
     private final java.util.function.Consumer<String> onImageUrlSeen;
@@ -33,22 +36,28 @@ public class RichTextEditorWidget extends ClickableWidget {
 
     private boolean editable;
     private BookData.Page page;
+    private EditorMode mode = EditorMode.OBJECT_MODE;
 
     private boolean bold;
     private boolean italic;
     private boolean underline;
     private int argb = 0xFF202020;
     private float size = 1.0f;
+    private int textBoxBgColor = 0x00FFFFFF;
 
-    private final CaretSelectionModel caret = new CaretSelectionModel();
-    private final BrushTool brushTool = new BrushTool();
+    private final TextBoxCaret textBoxCaret = new TextBoxCaret();
     private final ImageInteraction imageInteraction = new ImageInteraction();
+    private final TextBoxInteraction textBoxInteraction = new TextBoxInteraction();
+    private final TextBoxCreationTool textBoxCreationTool = new TextBoxCreationTool();
+    private final EraserTool eraserTool = new EraserTool();
+    private final AdvancedDrawingTool drawingTool = new AdvancedDrawingTool();
     private final HistoryManager history = new HistoryManager();
 
-    private final TextLayoutRenderer textLayoutRenderer = new TextLayoutRenderer();
-    private final ImageRenderer imageRenderer = new ImageRenderer();
-    private final CaretPainter caretPainter = new CaretPainter();
-    private final TextEditOps textOps = new TextEditOps();
+    private final TextBoxRenderer textBoxRenderer = new TextBoxRenderer();
+    private final TextBoxEditOps textBoxOps = new TextBoxEditOps();
+    private final EditorRenderer editorRenderer = new EditorRenderer();
+    private final EditorInputHandler inputHandler = new EditorInputHandler();
+    private final EditorMouseHandler mouseHandler = new EditorMouseHandler();
 
     private int scrollY = 0;
 
@@ -62,73 +71,128 @@ public class RichTextEditorWidget extends ClickableWidget {
         this.active = editable;
     }
 
-    public void setHeight(int height) { this.height = Math.max(40, height); clampScroll(); }
-    public void setBounds(int x, int y, int width, int height) { this.setX(x); this.setY(y); this.setWidth(width); this.height = Math.max(40, height); clampScroll(); }
+    public void setHeight(int height) {
+        this.height = Math.max(40, height);
+    }
 
-    private int innerLeft() { return getX() + PAD_OUT; }
-    private int innerTop()  { return getY() + PAD_OUT; }
-    private int innerW()    { return Math.max(0, getWidth() - PAD_OUT*2); }
-    private int innerH()    { return Math.max(0, getHeight() - PAD_OUT*2); }
+
+    public void setBounds(int x, int y, int width, int height) {
+        this.setX(x);
+        this.setY(y);
+        this.setWidth(width);
+        this.height = Math.max(40, height);
+    }
+
+    private int innerLeft() {
+        return getX() + PAD_OUT;
+    }
+
+    private int innerTop() {
+        return getY() + PAD_OUT;
+    }
+
+    private int innerW() {
+        return Math.max(0, getWidth() - PAD_OUT * 2);
+    }
+
+    private int innerH() {
+        return Math.max(0, getHeight() - PAD_OUT * 2);
+    }
+
     private double scale() {
-        double sw = (double)innerW() / (LOGICAL_W + PAD_IN*2.0);
-        double sh = (double)innerH() / (LOGICAL_H + PAD_IN*2.0);
+        double sw = (double) innerW() / (LOGICAL_W + PAD_IN * 2.0);
+        double sh = (double) innerH() / (LOGICAL_H + PAD_IN * 2.0);
         return Math.max(0.1, Math.min(sw, sh));
     }
-    private int canvasScreenLeft() { int scaledW = (int)Math.floor(scale() * (LOGICAL_W + PAD_IN*2)); return innerLeft() + Math.max(0, (innerW() - scaledW)/2); }
-    private int canvasScreenTop()  { int scaledH = (int)Math.floor(scale() * (LOGICAL_H + PAD_IN*2)); return innerTop() + Math.max(0, (innerH() - scaledH)/2); }
-    private int contentScreenLeft() { return canvasScreenLeft() + (int)Math.round(scale()*PAD_IN); }
-    private int contentScreenTop()  { return canvasScreenTop()  + (int)Math.round(scale()*PAD_IN); }
 
-    public void setEditable(boolean editable) { this.editable = editable; this.active = editable; }
+    private int canvasScreenLeft() {
+        int scaledW = (int) Math.floor(scale() * (LOGICAL_W + PAD_IN * 2));
+        return innerLeft() + Math.max(0, (innerW() - scaledW) / 2);
+    }
+
+    private int canvasScreenTop() {
+        int scaledH = (int) Math.floor(scale() * (LOGICAL_H + PAD_IN * 2));
+        return innerTop() + Math.max(0, (innerH() - scaledH) / 2);
+    }
+
+    private int contentScreenLeft() {
+        return canvasScreenLeft() + (int) Math.round(scale() * PAD_IN);
+    }
+
+    private int contentScreenTop() {
+        return canvasScreenTop() + (int) Math.round(scale() * PAD_IN);
+    }
+
+    public void setEditable(boolean editable) {
+        this.editable = editable;
+        this.active = editable;
+    }
 
     public void setContent(BookData.Page page) {
         this.page = page;
-        normalize();
-        caret.reset();
-        if (page != null) caret.setCaret(Math.min(page.nodes.size() - 1, 0), 0);
+        mode = EditorMode.OBJECT_MODE;
+        textBoxCaret.reset();
+        textBoxInteraction.clearSelection();
+        imageInteraction.clearSelection();
+        textBoxCreationTool.deactivate();
+        deactivateAllTools();
         scrollY = 0;
         if (onImageUrlSeen != null && page != null) {
             for (BookData.Node n : page.nodes) {
-                if (n instanceof BookData.ImageNode img && img.url != null && !img.url.isEmpty()) onImageUrlSeen.accept(img.url);
+                if (n instanceof BookData.ImageNode img && img.url != null && !img.url.isEmpty()) {
+                    onImageUrlSeen.accept(img.url);
+                }
             }
         }
         history.clear();
         pushSnapshot();
-        caretPainter.reset();
+        editorRenderer.resetCaretBlink();
     }
 
-    public void markSnapshot() { pushSnapshot(); }
-    public boolean undo() {
-        boolean applied = history.undo(this::applySnapshot);
-        if (applied) caretPainter.reset();
-        return applied;
+    public void markSnapshot() {
+        pushSnapshot();
     }
+
+    public boolean undo() {
+        boolean result = history.undo(this::applySnapshot);
+        if (result) editorRenderer.resetCaretBlink();
+        return result;
+    }
+
     public boolean redo() {
-        boolean applied = history.redo(this::applySnapshot);
-        if (applied) caretPainter.reset();
-        return applied;
+        boolean result = history.redo(this::applySnapshot);
+        if (result) editorRenderer.resetCaretBlink();
+        return result;
     }
 
     private void pushSnapshot() {
         if (page == null) return;
         history.pushSnapshot(page::toNbt);
     }
-    private void pushSnapshotOnce() { if (page != null) history.pushSnapshotOnce(page::toNbt); }
+
+    private void pushSnapshotOnce() {
+        if (page != null) history.pushSnapshotOnce(page::toNbt);
+    }
 
     private void applySnapshot(net.minecraft.nbt.NbtCompound snap) {
         BookData.Page restored = BookData.Page.fromNbt(snap.copy());
-        page.nodes.clear(); page.strokes.clear();
+        page.nodes.clear();
+        page.strokes.clear();
         page.bgArgb = restored.bgArgb;
         page.nodes.addAll(restored.nodes);
         page.strokes.addAll(restored.strokes);
         imageInteraction.clearSelection();
-        caret.clearSelection();
+        textBoxInteraction.clearSelection();
+        textBoxCaret.clearSelection();
+        textBoxCreationTool.deactivate();
+        mode = EditorMode.OBJECT_MODE;
         if (onImageUrlSeen != null) {
             for (BookData.Node n : page.nodes) {
-                if (n instanceof BookData.ImageNode img && img.url != null && !img.url.isEmpty()) onImageUrlSeen.accept(img.url);
+                if (n instanceof BookData.ImageNode img && img.url != null && !img.url.isEmpty()) {
+                    onImageUrlSeen.accept(img.url);
+                }
             }
         }
-        clampScroll();
     }
 
     private void notifyDirty() {
@@ -136,27 +200,118 @@ public class RichTextEditorWidget extends ClickableWidget {
         if (onDirty != null) onDirty.run();
     }
 
-    public void setBold(boolean bold) { this.bold = bold; }
-    public boolean isBold() { return bold; }
-    public void setItalic(boolean italic) { this.italic = italic; }
-    public boolean isItalic() { return italic; }
-    public void setUnderline(boolean underline) { this.underline = underline; }
-    public boolean isUnderline() { return underline; }
-    public void setColor(int argb) { this.argb = argb; brushTool.setBrushColor(argb); }
-    public void setSize(float size) { this.size = size; }
+    public void deactivateAllTools() {
+        drawingTool.setActive(false);
+        eraserTool.setActive(false);
+        textBoxCreationTool.deactivate();
+    }
 
-    private StyleParams style() { return new StyleParams(bold, italic, underline, argb, size); }
+    public void setBold(boolean bold) {
+        this.bold = bold;
+    }
 
-    public boolean isBrushMode() { return brushTool.isBrushMode(); }
-    public void setBrushMode(boolean brushMode) { brushTool.setBrushMode(brushMode); }
-    public void setBrushColor(int argb) { brushTool.setBrushColor(argb); }
-    public void setBrushSize(int px) { brushTool.setBrushSize(px); }
+    public boolean isBold() {
+        return bold;
+    }
+
+    public float getSize() {
+        return size;
+    }
+
+    public void setDrawingToolColor(int argb) {
+        drawingTool.setColor(argb);
+    }
+
+    public void setItalic(boolean italic) {
+        this.italic = italic;
+    }
+
+    public boolean isItalic() {
+        return italic;
+    }
+
+    public void setUnderline(boolean underline) {
+        this.underline = underline;
+    }
+
+    public boolean isUnderline() {
+        return underline;
+    }
+
+    public void setColor(int argb) {
+        this.argb = argb;
+        drawingTool.setColor(argb);
+    }
+
+    public void setSize(float size) {
+        this.size = size;
+    }
+
+    public void setTextBoxBgColor(int argb) {
+        this.textBoxBgColor = argb;
+        if (mode == EditorMode.OBJECT_MODE && textBoxInteraction.getSelectedTextBoxIndex() >= 0) {
+            var node = page.nodes.get(textBoxInteraction.getSelectedTextBoxIndex());
+            if (node instanceof BookData.TextBoxNode box) {
+                pushSnapshotOnce();
+                box.bgArgb = argb;
+                notifyDirty();
+            }
+        }
+    }
+
+    public void setDrawingTool(DrawingTool tool) {
+        deactivateAllTools();
+
+        if (tool == DrawingTool.ERASER) {
+            eraserTool.setActive(true);
+        } else {
+            drawingTool.setTool(tool);
+            drawingTool.setActive(true);
+        }
+
+        mode = EditorMode.OBJECT_MODE;
+        textBoxInteraction.clearSelection();
+    }
+
+    public DrawingTool getCurrentDrawingTool() {
+        if (eraserTool.isActive()) return DrawingTool.ERASER;
+        if (drawingTool.isActive()) return drawingTool.getCurrentTool();
+        return null;
+    }
+
+    public void setToolSize(int size) {
+        drawingTool.setSize(size);
+        eraserTool.setSize(size);
+    }
+
+    public void activateTextBoxTool() {
+        deactivateAllTools();
+        textBoxCreationTool.activate();
+        mode = EditorMode.OBJECT_MODE;
+    }
+
+    public boolean isTextBoxToolActive() {
+        return textBoxCreationTool.isActive();
+    }
+
+    private StyleParams style() {
+        return new StyleParams(bold, italic, underline, argb, size);
+    }
 
     public void setAlignment(int align) {
-        if (page == null || page.nodes.isEmpty()) return;
-        int idx = Math.max(0, Math.min(caret.getCaretNode(), page.nodes.size() - 1));
-        BookData.Node n = page.nodes.get(idx);
-        if (n instanceof BookData.TextNode tn) { pushSnapshotOnce(); tn.align = align; notifyDirty(); }
+        if (!editable || page == null || mode != EditorMode.TEXT_MODE) return;
+        if (textBoxInteraction.getSelectedTextBoxIndex() < 0) return;
+
+        var node = page.nodes.get(textBoxInteraction.getSelectedTextBoxIndex());
+        if (!(node instanceof BookData.TextBoxNode box)) return;
+
+        pushSnapshotOnce();
+
+        for (BookData.TextSegment seg : box.segments) {
+            seg.align = align;
+        }
+
+        notifyDirty();
     }
 
     public void insertImage(String url, int w, int h, boolean gif) {
@@ -169,66 +324,94 @@ public class RichTextEditorWidget extends ClickableWidget {
         img.y = Math.max(0, Math.min(scrollY + 10, Math.max(0, LOGICAL_H - img.h)));
         if (onImageUrlSeen != null && url != null && !url.isEmpty()) onImageUrlSeen.accept(url);
         page.nodes.add(img);
-        caret.setCaret(page.nodes.size() - 1, 1);
-        normalize();
+        mode = EditorMode.OBJECT_MODE;
         notifyDirty();
     }
 
-    private void normalize() {
-        bookeditor.client.editor.page.PageNormalizer.normalize(page, style());
-        caret.ensureWithinPage(page);
+    public void insertTextBox() {
+        if (!editable || page == null) return;
+        pushSnapshotOnce();
+        BookData.TextBoxNode box = new BookData.TextBoxNode(50, 50 + scrollY, 300, 100);
+        box.bgArgb = textBoxBgColor;
+        box.setText("", bold, italic, underline, argb, size);
+        page.nodes.add(box);
+        mode = EditorMode.OBJECT_MODE;
+        notifyDirty();
+    }
+
+    public void applyStyleToSelection() {
+        if (!editable || page == null || mode != EditorMode.TEXT_MODE) return;
+        if (textBoxInteraction.getSelectedTextBoxIndex() < 0) return;
+
+        var node = page.nodes.get(textBoxInteraction.getSelectedTextBoxIndex());
+        if (!(node instanceof BookData.TextBoxNode box)) return;
+
+        if (textBoxCaret.hasSelection()) {
+            pushSnapshotOnce();
+            textBoxOps.applyStyleToSelection(box, textBoxCaret, style());
+            notifyDirty();
+        }
     }
 
     @Override
     protected void renderButton(DrawContext ctx, int mouseX, int mouseY, float delta) {
+        renderFrame(ctx);
+        renderCanvas(ctx);
+        enableScissor(ctx);
+
+        if (textBoxCreationTool.isActive()) {
+            textBoxCreationTool.updatePreview(mouseX, mouseY, contentScreenLeft(), contentScreenTop(), scale(), scrollY);
+        }
+
+        drawingTool.renderStrokes(ctx, page, contentScreenLeft(), contentScreenTop(), scale(), scrollY);
+
+        editorRenderer.render(ctx, page, mode, imageInteraction, textBoxInteraction, textBoxCaret,
+                textRenderer, this.isFocused(), editable, contentScreenLeft(), contentScreenTop(),
+                canvasScreenTop(), scale(), scrollY, LOGICAL_W, LOGICAL_H);
+
+        if (textBoxCreationTool.isActive()) {
+            textBoxCreationTool.renderPreview(ctx, contentScreenLeft(), contentScreenTop(), scale(), scrollY);
+        }
+
+        if (eraserTool.isActive()) {
+            eraserTool.renderPreview(ctx, mouseX, mouseY, contentScreenLeft(), contentScreenTop(), scale(), scrollY);
+        }
+
+        ctx.disableScissor();
+    }
+    private void renderFrame(DrawContext ctx) {
         int frame = isHovered() ? 0xFFAAAAAA : 0xFFBEBEBE;
         ctx.fill(getX() - 1, getY() - 1, getX() + getWidth() + 1, getY() + getHeight() + 1, frame);
         ctx.fill(getX(), getY(), getX() + getWidth(), getY() + getHeight(), 0xFFEFEFEF);
+    }
 
+    private void renderCanvas(DrawContext ctx) {
         int cLeft = canvasScreenLeft();
         int cTop = canvasScreenTop();
-        int scaledW = (int)Math.floor(scale() * (LOGICAL_W + PAD_IN*2));
-        int scaledH = (int)Math.floor(scale() * (LOGICAL_H + PAD_IN*2));
+        int scaledW = (int) Math.floor(scale() * (LOGICAL_W + PAD_IN * 2));
+        int scaledH = (int) Math.floor(scale() * (LOGICAL_H + PAD_IN * 2));
         int bg = page != null ? page.bgArgb : 0xFFF8F8F8;
         ctx.fill(cLeft, cTop, cLeft + scaledW, cTop + scaledH, bg);
         ctx.fill(cLeft - 1, cTop - 1, cLeft + scaledW + 1, cTop, 0x33000000);
         ctx.fill(cLeft - 1, cTop + scaledH, cLeft + scaledW + 1, cTop + scaledH + 1, 0x33000000);
         ctx.fill(cLeft - 1, cTop, cLeft, cTop + scaledH, 0x33000000);
         ctx.fill(cLeft + scaledW, cTop, cLeft + scaledW + 1, cTop + scaledH, 0x33000000);
+    }
 
+    private void enableScissor(DrawContext ctx) {
+        int cLeft = canvasScreenLeft();
+        int cTop = canvasScreenTop();
+        int scaledW = (int) Math.floor(scale() * (LOGICAL_W + PAD_IN * 2));
+        int scaledH = (int) Math.floor(scale() * (LOGICAL_H + PAD_IN * 2));
         int scLeft = Math.max(innerLeft(), cLeft);
         int scTop = Math.max(innerTop(), cTop);
         int scRight = Math.min(innerLeft() + innerW(), cLeft + scaledW);
         int scBottom = Math.min(innerTop() + innerH(), cTop + scaledH);
         if (scRight > scLeft && scBottom > scTop) ctx.enableScissor(scLeft, scTop, scRight, scBottom);
-
-        int startScreenX = contentScreenLeft();
-        int startScreenY = contentScreenTop();
-        double s = scale();
-
-        brushTool.renderStrokes(ctx, page, startScreenX, startScreenY, s, scrollY);
-
-        imageInteraction.beginFrame();
-
-        TextLayoutRenderer.CaretPos caretPos = textLayoutRenderer.render(
-                ctx, textRenderer, page, caret, startScreenX, startScreenY, scrollY, s, LOGICAL_W, textRenderer.fontHeight
-        );
-
-        imageRenderer.render(ctx, page, imageInteraction, startScreenX, startScreenY - (int)Math.round(s*scrollY), canvasScreenTop(), s, LOGICAL_W, LOGICAL_H);
-
-        imageInteraction.renderSelectionHandles(ctx);
-
-        caretPainter.renderCaret(ctx, this.isFocused(), editable, brushTool.isBrushMode(), caret.hasSelection(),
-                caretPos.x, caretPos.y, startScreenX, startScreenY - (int)Math.round(s*scrollY), s, textRenderer.fontHeight);
-
-        ctx.disableScissor();
     }
-
-    private void clampScroll() { scrollY = 0; }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
-        clampScroll();
         return true;
     }
 
@@ -237,81 +420,100 @@ public class RichTextEditorWidget extends ClickableWidget {
         if (!this.isMouseOver(mouseX, mouseY)) return false;
         this.setFocused(true);
 
-        int mx = (int)mouseX;
-        int my = (int)mouseY;
+        int mx = (int) mouseX;
+        int my = (int) mouseY;
 
-        if (brushTool.beginStrokeIfNeeded(editable, page, mx, my, contentScreenLeft(), contentScreenTop(), scale(), scrollY)) {
+        if (textBoxCreationTool.isActive()) {
             pushSnapshotOnce();
+            BookData.TextBoxNode box = new BookData.TextBoxNode(
+                    textBoxCreationTool.getPreviewX(),
+                    textBoxCreationTool.getPreviewY(),
+                    textBoxCreationTool.getPreviewWidth(),
+                    textBoxCreationTool.getPreviewHeight()
+            );
+            box.bgArgb = textBoxBgColor;
+            box.setText("", bold, italic, underline, argb, size);
+            page.nodes.add(box);
+            textBoxCreationTool.deactivate();
+            notifyDirty();
             return true;
         }
 
-        imageInteraction.clearSelection();
-
-        if (imageInteraction.mouseClicked(mx, my, editable, this::pushSnapshotOnce, page)) {
+        if (eraserTool.isActive()) {
+            pushSnapshotOnce();
+            eraserTool.erase(page, mx, my, contentScreenLeft(), contentScreenTop(), scale(), scrollY);
+            notifyDirty();
             return true;
         }
 
-        int localX = (int)Math.floor(((mx - contentScreenLeft()) / scale()));
-        int localY = (int)Math.floor(((my - contentScreenTop()) / scale())) + scrollY;
-        int[] cNode = new int[1], cOff = new int[1];
-        bookeditor.client.editor.text.TextHitTester.placeCaretByApprox(textRenderer, page, cNode, cOff, localX, localY, LOGICAL_W);
-        caret.setCaret(cNode[0], cOff[0]);
-        caret.clearSelection();
+        if (drawingTool.isActive()) {
+            pushSnapshotOnce();
+            drawingTool.beginStroke(page, mx, my, contentScreenLeft(), contentScreenTop(), scale(), scrollY);
+            return true;
+        }
+
+        EditorMode oldMode = mode;
+        mode = mouseHandler.handleMouseClick(mx, my, editable, page, mode,
+                imageInteraction, textBoxInteraction, textBoxCaret, textBoxRenderer,
+                textRenderer, contentScreenLeft(), contentScreenTop(), scale(), scrollY, this::pushSnapshotOnce);
+
+        if (mode == EditorMode.TEXT_MODE || oldMode != mode) {
+            editorRenderer.resetCaretBlink();
+        }
+
         return true;
     }
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dx, double dy) {
-        if (!editable) return false;
-
-        int mx = (int)mouseX;
-        int my = (int)mouseY;
-
-        if (brushTool.continueStrokeIfActive(mx, my, contentScreenLeft(), contentScreenTop(), scale(), scrollY)) {
+        if (eraserTool.isActive()) {
+            eraserTool.erase(page, (int) mouseX, (int) mouseY, contentScreenLeft(), contentScreenTop(), scale(), scrollY);
+            notifyDirty();
             return true;
         }
 
-        if (imageInteraction.mouseDragged(mx, my, true, scale(), page)) {
+        if (drawingTool.isActive()) {
+            drawingTool.continueStroke((int) mouseX, (int) mouseY, contentScreenLeft(), contentScreenTop(), scale(), scrollY);
             return true;
         }
 
-        int localX = (int)Math.floor(((mx - contentScreenLeft()) / scale()));
-        int localY = (int)Math.floor(((my - contentScreenTop()) / scale())) + scrollY;
-        int[] cNode = new int[1], cOff = new int[1];
-        TextHitTester.placeCaretByApprox(textRenderer, page, cNode, cOff, localX, localY, LOGICAL_W);
-        if (!caret.hasSelection()) {
-            caret.setAnchor(caret.getCaretNode(), caret.getCaretOffset());
-        }
-        caret.setCaret(cNode[0], cOff[0]);
-        int[] st = caret.selectionStart();
-        caret.setSelectionActive(!(cNode[0] == st[0] && cOff[0] == st[1]));
-        return true;
+        return mouseHandler.handleMouseDrag((int) mouseX, (int) mouseY, mode, editable,
+                imageInteraction, textBoxInteraction, textBoxCaret, textBoxRenderer, textRenderer,
+                page, contentScreenLeft(), contentScreenTop(), scale(), scrollY);
     }
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         boolean changed = false;
         if (imageInteraction.mouseReleased()) changed = true;
-        if (brushTool.endStrokeIfActive(page)) changed = true;
+        if (textBoxInteraction.mouseReleased()) changed = true;
+        if (drawingTool.endStroke()) changed = true;
         if (changed) notifyDirty();
         return super.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override
     public boolean charTyped(char chr, int modifiers) {
-        if (!editable || page == null || !this.isFocused() || brushTool.isBrushMode()) return false;
-        if (chr == '\r') chr = '\n';
-        if (chr < 32 && chr != '\n' && chr != '\t') return false;
+        if (!editable || page == null || !this.isFocused()) return false;
+        if (drawingTool.isActive() || eraserTool.isActive() || textBoxCreationTool.isActive()) return false;
 
-        pushSnapshotOnce();
-
-        if (caret.hasSelection()) {
-            textOps.deleteSelection(page, caret, style());
+        int selectedIdx = textBoxInteraction.getSelectedTextBoxIndex();
+        if (selectedIdx >= 0 && selectedIdx < page.nodes.size()) {
+            var node = page.nodes.get(selectedIdx);
+            if (node instanceof BookData.TextBoxNode box) {
+                if (box.getFullText().length() >= MAX_TEXTBOX_CHARS) {
+                    return false;
+                }
+            }
         }
 
-        textOps.insertChar(page, caret, style(), chr);
-        notifyDirty();
-        return true;
+        pushSnapshotOnce();
+        boolean handled = inputHandler.handleCharTyped(mode, page, textBoxInteraction, textBoxCaret, style(), chr);
+        if (handled) {
+            editorRenderer.resetCaretBlink();
+            notifyDirty();
+        }
+        return handled;
     }
 
     @Override
@@ -319,72 +521,154 @@ public class RichTextEditorWidget extends ClickableWidget {
         if (!this.isFocused()) return false;
 
         if ((keyCode == GLFW.GLFW_KEY_DELETE || keyCode == GLFW.GLFW_KEY_BACKSPACE) && page != null) {
-            if (imageInteraction.getSelectedImageIndex() >= 0) {
-                pushSnapshotOnce();
-                imageInteraction.deleteSelectedIfImage(page);
-                notifyDirty();
+            if (mode == EditorMode.OBJECT_MODE) {
+                if (imageInteraction.getSelectedImageIndex() >= 0) {
+                    pushSnapshotOnce();
+                    imageInteraction.deleteSelectedIfImage(page);
+                    notifyDirty();
+                    return true;
+                }
+                if (textBoxInteraction.getSelectedTextBoxIndex() >= 0) {
+                    pushSnapshotOnce();
+                    textBoxInteraction.deleteSelectedIfTextBox(page);
+                    notifyDirty();
+                    return true;
+                }
+            }
+        }
+
+        if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+            if (textBoxCreationTool.isActive()) {
+                textBoxCreationTool.deactivate();
+                return true;
+            }
+            if (drawingTool.isActive() || eraserTool.isActive()) {
+                deactivateAllTools();
+                return true;
+            }
+            if (mode == EditorMode.TEXT_MODE) {
+                mode = EditorMode.OBJECT_MODE;
+                textBoxInteraction.setEditingText(false);
+                textBoxCaret.clearSelection();
                 return true;
             }
         }
 
-        if (!editable || page == null || brushTool.isBrushMode()) return false;
+        if (!editable || page == null || drawingTool.isActive() || eraserTool.isActive() || textBoxCreationTool.isActive()) return false;
 
-        boolean ctrl = hasControlDown();
-        if (ctrl && (keyCode == GLFW.GLFW_KEY_A)) {
-            caret.selectAll(page);
-            return true;
+        if (keyCode == GLFW.GLFW_KEY_LEFT || keyCode == GLFW.GLFW_KEY_RIGHT ||
+                keyCode == GLFW.GLFW_KEY_UP || keyCode == GLFW.GLFW_KEY_DOWN ||
+                keyCode == GLFW.GLFW_KEY_HOME || keyCode == GLFW.GLFW_KEY_END) {
+            editorRenderer.resetCaretBlink();
         }
 
-        if (keyCode == GLFW.GLFW_KEY_BACKSPACE) {
-            pushSnapshotOnce();
-            if (caret.hasSelection()) textOps.deleteSelection(page, caret, style());
-            else textOps.backspace(page, caret, style());
-            caret.clearSelection();
+        pushSnapshotOnce();
+        boolean handled = inputHandler.handleKeyPressed(mode, page, textBoxInteraction, textBoxCaret, keyCode, modifiers);
+        if (handled) {
+            editorRenderer.resetCaretBlink();
             notifyDirty();
-            return true;
-        } else if (keyCode == GLFW.GLFW_KEY_DELETE) {
-            pushSnapshotOnce();
-            if (caret.hasSelection()) textOps.deleteSelection(page, caret, style());
-            else textOps.deleteForward(page, caret, style());
-            caret.clearSelection();
-            notifyDirty();
-            return true;
-        } else if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
-            pushSnapshotOnce();
-            if (caret.hasSelection()) textOps.deleteSelection(page, caret, style());
-            boolean r = charTyped('\n', modifiers);
-            if (r) { caret.clearSelection(); notifyDirty(); }
-            return r;
-        } else if (keyCode == GLFW.GLFW_KEY_LEFT) {
-            if ((modifiers & GLFW.GLFW_MOD_SHIFT) != 0) {
-                if (!caret.hasSelection()) { caret.setAnchor(caret.getCaretNode(), caret.getCaretOffset()); }
-                caret.moveLeft(page);
-                caret.setSelectionActive(true);
-            } else {
-                caret.moveLeft(page);
-                caret.clearSelection();
-            }
-            return true;
-        } else if (keyCode == GLFW.GLFW_KEY_RIGHT) {
-            if ((modifiers & GLFW.GLFW_MOD_SHIFT) != 0) {
-                if (!caret.hasSelection()) { caret.setAnchor(caret.getCaretNode(), caret.getCaretOffset()); }
-                caret.moveRight(page);
-                caret.setSelectionActive(true);
-            } else {
-                caret.moveRight(page);
-                caret.clearSelection();
-            }
-            return true;
-        } else if (keyCode == GLFW.GLFW_KEY_PAGE_UP) {
-            mouseScrolled(0,0,1.0);
-            return true;
-        } else if (keyCode == GLFW.GLFW_KEY_PAGE_DOWN) {
-            mouseScrolled(0,0,-1.0);
-            return true;
         }
-        return false;
+        return handled;
     }
 
     @Override
-    protected void appendClickableNarrations(NarrationMessageBuilder builder) {}
+    protected void appendClickableNarrations(NarrationMessageBuilder builder) {
+    }
+
+    private String clipboard = "";
+
+    public void copySelection() {
+        if (textBoxCaret.hasSelection()) {
+            int selectedIdx = textBoxInteraction.getSelectedTextBoxIndex();
+            if (selectedIdx >= 0 && selectedIdx < page.nodes.size()) {
+                var node = page.nodes.get(selectedIdx);
+                if (node instanceof BookData.TextBoxNode box) {
+                    int selStart = textBoxCaret.selectionStart();
+                    int selEnd = textBoxCaret.selectionEnd();
+                    clipboard = box.getFullText().substring(selStart, Math.min(selEnd, box.getFullText().length()));
+                }
+            }
+        }
+    }
+
+    public void cutSelection() {
+        copySelection();
+        if (textBoxCaret.hasSelection()) {
+            pushSnapshotOnce();
+            int selectedIdx = textBoxInteraction.getSelectedTextBoxIndex();
+            if (selectedIdx >= 0 && selectedIdx < page.nodes.size()) {
+                var node = page.nodes.get(selectedIdx);
+                if (node instanceof BookData.TextBoxNode box) {
+                    textBoxOps.backspace(box, textBoxCaret);
+                }
+            }
+            notifyDirty();
+        }
+    }
+
+    public void paste() {
+        if (!editable || page == null || mode != EditorMode.TEXT_MODE) return;
+        if (clipboard.isEmpty()) return;
+
+        int selectedIdx = textBoxInteraction.getSelectedTextBoxIndex();
+        if (selectedIdx >= 0 && selectedIdx < page.nodes.size()) {
+            var node = page.nodes.get(selectedIdx);
+            if (node instanceof BookData.TextBoxNode box) {
+                pushSnapshotOnce();
+                for (char ch : clipboard.toCharArray()) {
+                    textBoxOps.insertChar(box, textBoxCaret, style(), ch);
+                }
+                notifyDirty();
+            }
+        }
+    }
+
+    public void selectAll() {
+        if (mode != EditorMode.TEXT_MODE) return;
+
+        int selectedIdx = textBoxInteraction.getSelectedTextBoxIndex();
+        if (selectedIdx >= 0 && selectedIdx < page.nodes.size()) {
+            var node = page.nodes.get(selectedIdx);
+            if (node instanceof BookData.TextBoxNode box) {
+                textBoxCaret.selectAll(box);
+            }
+        }
+    }
+
+    public void syncStylesFromSelection() {
+        if (textBoxCaret.hasSelection()) {
+            int selectedIdx = textBoxInteraction.getSelectedTextBoxIndex();
+            if (selectedIdx >= 0 && selectedIdx < page.nodes.size()) {
+                var node = page.nodes.get(selectedIdx);
+                if (node instanceof BookData.TextBoxNode box) {
+                    int selStart = textBoxCaret.selectionStart();
+                    if (selStart < box.getFullText().length()) {
+                        BookData.TextSegment segment = getSegmentAtPosition(box, selStart);
+                        if (segment != null) {
+                            this.bold = segment.bold;
+                            this.italic = segment.italic;
+                            this.underline = segment.underline;
+                            this.argb = segment.argb;
+                            this.size = segment.size;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private BookData.TextSegment getSegmentAtPosition(BookData.TextBoxNode box, int pos) {
+        int currentPos = 0;
+        for (BookData.TextSegment seg : box.segments) {
+            if (pos >= currentPos && pos < currentPos + seg.text.length()) {
+                return seg;
+            }
+            currentPos += seg.text.length();
+        }
+        return box.segments.isEmpty() ? null : box.segments.get(box.segments.size() - 1);
+    }
+
+    public int getColor() {
+        return argb;
+    }
 }

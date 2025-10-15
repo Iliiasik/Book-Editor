@@ -71,6 +71,7 @@ public class BookData {
             String t = c.getString("type");
             if ("text".equals(t)) return TextNode.fromNbt(c);
             if ("image".equals(t)) return ImageNode.fromNbt(c);
+            if ("textbox".equals(t)) return TextBoxNode.fromNbt(c);
             return new TextNode("", false, false, false, 0xFF202020, 1.0f, ALIGN_LEFT);
         }
     }
@@ -125,6 +126,135 @@ public class BookData {
         }
 
         public boolean sameStyle(TextNode other) {
+            return this.bold == other.bold &&
+                    this.italic == other.italic &&
+                    this.underline == other.underline &&
+                    this.argb == other.argb &&
+                    Float.compare(this.size, other.size) == 0 &&
+                    this.align == other.align;
+        }
+    }
+
+    public static class TextBoxNode extends Node {
+        public int x;
+        public int y;
+        public int width;
+        public int height;
+        public int bgArgb = 0x00FFFFFF;
+        public final List<TextSegment> segments = new ArrayList<>();
+
+        public TextBoxNode(int x, int y, int width, int height) {
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+        }
+
+        @Override public String type() { return "textbox"; }
+
+        @Override
+        public NbtCompound toNbt() {
+            NbtCompound c = new NbtCompound();
+            c.putString("type", "textbox");
+            c.putInt("x", x);
+            c.putInt("y", y);
+            c.putInt("w", width);
+            c.putInt("h", height);
+            c.putInt("bgArgb", bgArgb);
+
+            NbtList segList = new NbtList();
+            for (TextSegment seg : segments) segList.add(seg.toNbt());
+            c.put("segments", segList);
+
+            return c;
+        }
+
+        public static TextBoxNode fromNbt(NbtCompound c) {
+            TextBoxNode box = new TextBoxNode(
+                    c.getInt("x"),
+                    c.getInt("y"),
+                    c.getInt("w"),
+                    c.getInt("h")
+            );
+
+            box.bgArgb = c.contains("bgArgb", NbtElement.INT_TYPE) ? c.getInt("bgArgb") : 0x00FFFFFF;
+
+            if (c.contains("segments", NbtElement.LIST_TYPE)) {
+                NbtList segList = c.getList("segments", NbtElement.COMPOUND_TYPE);
+                for (int i = 0; i < segList.size(); i++) {
+                    box.segments.add(TextSegment.fromNbt(segList.getCompound(i)));
+                }
+            }
+
+            return box;
+        }
+
+        public String getFullText() {
+            StringBuilder sb = new StringBuilder();
+            for (TextSegment seg : segments) {
+                sb.append(seg.text);
+            }
+            return sb.toString();
+        }
+
+        public void setText(String text, boolean bold, boolean italic, boolean underline, int argb, float size) {
+            segments.clear();
+            if (!text.isEmpty()) {
+                segments.add(new TextSegment(text, bold, italic, underline, argb, size));
+            }
+        }
+    }
+
+    public static class TextSegment {
+        public String text;
+        public boolean bold;
+        public boolean italic;
+        public boolean underline;
+        public int argb;
+        public float size;
+        public int align = ALIGN_LEFT;
+
+        public TextSegment(String text, boolean bold, boolean italic, boolean underline, int argb, float size) {
+            this.text = text;
+            this.bold = bold;
+            this.italic = italic;
+            this.underline = underline;
+            this.argb = argb;
+            this.size = size;
+        }
+
+        public NbtCompound toNbt() {
+            NbtCompound c = new NbtCompound();
+            c.putString("text", text);
+            c.putBoolean("bold", bold);
+            c.putBoolean("italic", italic);
+            c.putBoolean("underline", underline);
+            c.putInt("argb", argb);
+            c.putFloat("size", size);
+            c.putInt("align", align);
+            return c;
+        }
+
+        public static TextSegment fromNbt(NbtCompound c) {
+            TextSegment seg = new TextSegment(
+                    c.getString("text"),
+                    c.getBoolean("bold"),
+                    c.getBoolean("italic"),
+                    c.getBoolean("underline"),
+                    c.getInt("argb"),
+                    c.getFloat("size")
+            );
+            seg.align = c.contains("align", NbtElement.INT_TYPE) ? clampAlign(c.getInt("align")) : ALIGN_LEFT;
+            return seg;
+        }
+
+        public TextSegment copy() {
+            TextSegment seg = new TextSegment(text, bold, italic, underline, argb, size);
+            seg.align = align;
+            return seg;
+        }
+
+        public boolean sameStyle(TextSegment other) {
             return this.bold == other.bold &&
                     this.italic == other.italic &&
                     this.underline == other.underline &&
@@ -228,8 +358,9 @@ public class BookData {
             data.signed = false;
             Page p = new Page();
             p.bgArgb = 0xFFF8F8F8;
-            p.nodes.add(new TextNode(Text.translatable("bookeditor.default_page").getString(),
-                    false, false, false, 0xFF202020, 1.0f, ALIGN_LEFT));
+            TextBoxNode box = new TextBoxNode(20, 20, 400, 100);
+            box.setText(Text.translatable("bookeditor.default_page").getString(), false, false, false, 0xFF202020, 1.0f);
+            p.nodes.add(box);
             data.pages.add(p);
             writeTo(stack, data);
         }
