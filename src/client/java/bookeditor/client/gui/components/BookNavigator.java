@@ -1,9 +1,9 @@
 package bookeditor.client.gui.components;
 
 import bookeditor.client.gui.base.WidgetHost;
-import bookeditor.client.gui.widget.CustomButton;
-import bookeditor.client.gui.widget.IconButton;
-import bookeditor.client.gui.widget.NumericTextField;
+import bookeditor.client.gui.widget.button.CustomButton;
+import bookeditor.client.gui.widget.button.IconButton;
+import bookeditor.client.gui.widget.field.NumericTextField;
 import bookeditor.client.util.IconUtils;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
@@ -23,9 +23,7 @@ public class BookNavigator {
 
     private CustomButton prevBtn;
     private NumericTextField pageField;
-    private IconButton goBtn;
     private CustomButton nextBtn;
-    private int totalPagesTextWidth = 0;
 
     public BookNavigator(WidgetHost host, int screenWidth, int y, int btnH,
                          IntSupplier getCurrentPage, IntSupplier getTotalPages,
@@ -42,11 +40,10 @@ public class BookNavigator {
     public void build() {
         int margin = 10;
         String maxPages = "/ 999";
-        totalPagesTextWidth = host.getTextRenderer().getWidth(maxPages);
+        int totalPagesTextWidth = host.getTextRenderer().getWidth(maxPages);
 
         int totalWidth = 20 + 3 + 36 + totalPagesTextWidth + 5 + 18 + 3 + 20;
-        int startX = screenWidth - margin - totalWidth;
-        int cx = startX;
+        int cx = screenWidth - margin - totalWidth;
 
         prevBtn = new CustomButton(cx, y, 20, btnH, Text.literal("◀"), b -> {
             int current = getCurrentPage.getAsInt();
@@ -62,7 +59,7 @@ public class BookNavigator {
         host.addDrawable(pageField);
         cx += 36 + totalPagesTextWidth + 5;
 
-        goBtn = new IconButton(cx, y, 18, btnH, IconUtils.ICON_APPLY,
+        IconButton goBtn = new IconButton(cx, y, 18, btnH, IconUtils.ICON_APPLY,
                 Text.translatable("tooltip.bookeditor.go_to_page"), b -> handlePageFieldSubmit());
         host.addDrawable(goBtn);
         cx += 18 + 3;

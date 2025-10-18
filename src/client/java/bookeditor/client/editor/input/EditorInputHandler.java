@@ -1,10 +1,10 @@
 package bookeditor.client.editor.input;
 
 import bookeditor.client.editor.mode.EditorMode;
-import bookeditor.client.editor.text.StyleParams;
+import bookeditor.client.editor.textbox.StyleParams;
 import bookeditor.client.editor.textbox.TextBoxCaret;
 import bookeditor.client.editor.textbox.TextBoxEditOps;
-import bookeditor.client.editor.textbox.TextBoxInteraction;
+import bookeditor.client.editor.interaction.TextBoxInteraction;
 import bookeditor.data.BookData;
 import org.lwjgl.glfw.GLFW;
 

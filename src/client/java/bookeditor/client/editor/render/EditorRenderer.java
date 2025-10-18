@@ -1,10 +1,9 @@
 package bookeditor.client.editor.render;
 
-import bookeditor.client.editor.image.ImageInteraction;
+import bookeditor.client.editor.interaction.ImageInteraction;
 import bookeditor.client.editor.mode.EditorMode;
 import bookeditor.client.editor.textbox.TextBoxCaret;
-import bookeditor.client.editor.textbox.TextBoxInteraction;
-import bookeditor.client.editor.textbox.TextBoxRenderer;
+import bookeditor.client.editor.interaction.TextBoxInteraction;
 import bookeditor.data.BookData;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;

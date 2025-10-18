@@ -1,6 +1,6 @@
 package bookeditor.client.editor.render;
 
-import bookeditor.client.editor.image.ImageInteraction;
+import bookeditor.client.editor.interaction.ImageInteraction;
 import bookeditor.client.util.ImageCache;
 import bookeditor.data.BookData;
 import net.minecraft.client.gui.DrawContext;

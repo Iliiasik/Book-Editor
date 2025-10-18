@@ -4,9 +4,9 @@ import bookeditor.client.gui.base.WidgetHost;
 import bookeditor.client.gui.components.AdaptiveToolbar;
 import bookeditor.client.gui.components.BookNavigator;
 import bookeditor.client.gui.render.AuthorBadgeRenderer;
-import bookeditor.client.gui.widget.ColorPickerDropdown;
-import bookeditor.client.gui.widget.CustomTextField;
-import bookeditor.client.gui.widget.RichTextEditorWidget;
+import bookeditor.client.gui.widget.button.ColorPickerDropdown;
+import bookeditor.client.gui.widget.field.CustomTextField;
+import bookeditor.client.gui.widget.editor.EditorWidget;
 import bookeditor.client.net.BookSyncService;
 import bookeditor.client.util.ImageCache;
 import bookeditor.data.BookData;
@@ -33,7 +33,7 @@ public class BookScreen extends Screen implements WidgetHost {
 
     private int bookPage = 0;
     private CustomTextField titleField;
-    private RichTextEditorWidget editor;
+    private EditorWidget editor;
     private BookNavigator bookNavigator;
     private AdaptiveToolbar toolbar;
 
@@ -87,7 +87,7 @@ public class BookScreen extends Screen implements WidgetHost {
         int editorWidth = this.width - MARGIN * 2;
         int editorHeight = Math.max(160, this.height - editorY - MARGIN);
 
-        editor = new RichTextEditorWidget(
+        editor = new EditorWidget(
                 textRenderer, editorX, editorY, editorWidth, editorHeight,
                 !data.signed, ImageCache::requestTexture, this::onDirty
         );
