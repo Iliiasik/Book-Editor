@@ -42,6 +42,15 @@
   "tooltip.bookeditor.text_color": "Textfarbe",
   "tooltip.bookeditor.go_to_page": "Gehe zu Seite",
 
-  "narrator.select.color": "Farbe auswählen"
-}
+  "narrator.select.color": "Farbe auswählen",
 
+  "screen.bookeditor.size_limit_reached": "Das Größenlimit des Buches wurde erreicht - weitere Änderungen sind deaktiviert",
+  "screen.bookeditor.page_not_saved": "Seite nicht gespeichert: Das Größenlimit des Buches wurde erreicht",
+  "screen.bookeditor.failed_save": "Speichern der Seite fehlgeschlagen: Daten überschreiten die Grenzen",
+  "screen.bookeditor.size_limit_reached_with_size": "Das Größenlimit des Buches wurde erreicht - %s / %s",
+  "screen.bookeditor.nbt_usage_percent": "%d%% verwendet",
+  "screen.bookeditor.nbt_mode_changed": "NBT-Anzeigemodus: %s",
+  "screen.bookeditor.nbt_mode_progress": "Fortschritt",
+  "screen.bookeditor.nbt_mode_size": "Größe",
+  "screen.bookeditor.nbt_mode_hide": "Ausgeblendet"
+}

@@ -42,6 +42,15 @@
   "tooltip.bookeditor.text_color": "لون النص",
   "tooltip.bookeditor.go_to_page": "الانتقال إلى الصفحة",
 
-  "narrator.select.color": "اختر لونًا"
-}
+  "narrator.select.color": "اختر لونًا",
 
+  "screen.bookeditor.size_limit_reached": "تم الوصول إلى حد حجم الكتاب - تم تعطيل التغييرات الإضافية",
+  "screen.bookeditor.page_not_saved": "لم يتم حفظ الصفحة: تم الوصول إلى حد حجم الكتاب",
+  "screen.bookeditor.failed_save": "فشل حفظ الصفحة: البيانات تتجاوز الحدود",
+  "screen.bookeditor.size_limit_reached_with_size": "تم الوصول إلى حد حجم الكتاب - %s / %s",
+  "screen.bookeditor.nbt_usage_percent": "%d%% مستخدم",
+  "screen.bookeditor.nbt_mode_changed": "وضع عرض NBT: %s",
+  "screen.bookeditor.nbt_mode_progress": "التقدم",
+  "screen.bookeditor.nbt_mode_size": "الحجم",
+  "screen.bookeditor.nbt_mode_hide": "مخفي"
+}

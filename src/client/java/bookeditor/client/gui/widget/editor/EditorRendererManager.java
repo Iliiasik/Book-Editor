@@ -1,6 +1,7 @@
 package bookeditor.client.gui.widget.editor;
 
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.text.Text;
 
 public class EditorRendererManager {
     private final EditorState state;
@@ -16,10 +17,16 @@ public class EditorRendererManager {
         if (state.textBoxCreationTool.isActive()) {
             state.textBoxCreationTool.updatePreview(mouseX, mouseY, state.contentScreenLeft(), state.contentScreenTop(), state.scale(), state.scrollY);
         }
-        state.drawingTool.renderStrokes(ctx, state.page, state.contentScreenLeft(), state.contentScreenTop(), state.scale(), state.scrollY);
+
         state.editorRenderer.render(ctx, state.page, state.mode, state.imageInteraction, state.textBoxInteraction, state.textBoxCaret,
                 state.textRenderer, widget.isFocused(), state.editable, state.contentScreenLeft(), state.contentScreenTop(),
                 state.canvasScreenTop(), state.scale(), state.scrollY, EditorState.LOGICAL_W, EditorState.LOGICAL_H);
+
+        state.drawingTool.renderStrokes(ctx, state.page, state.contentScreenLeft(), state.contentScreenTop(), state.scale(), state.scrollY);
+
+        state.imageInteraction.renderSelectionHandles(ctx);
+        state.textBoxInteraction.renderSelectionHandles(ctx);
+
         if (state.textBoxCreationTool.isActive()) {
             state.textBoxCreationTool.renderPreview(ctx, state.contentScreenLeft(), state.contentScreenTop(), state.scale(), state.scrollY);
         }
@@ -27,6 +34,14 @@ public class EditorRendererManager {
             state.eraserTool.renderPreview(ctx, mouseX, mouseY, state.contentScreenLeft(), state.contentScreenTop(), state.scale(), state.scrollY);
         }
         ctx.disableScissor();
+
+        String msg = state.getTransientMessage();
+        if (msg != null) {
+            int centerX = widget.getX() + widget.getWidth() / 2;
+            int textY = widget.getY() + 6;
+            int textW = state.textRenderer.getWidth(msg);
+            ctx.drawText(state.textRenderer, Text.literal(msg), centerX - textW / 2, textY, 0xFFE0E0E0, false);
+        }
     }
     private void renderFrame(DrawContext ctx, EditorWidget widget) {
         int frame = widget.isHovered() ? 0xFFAAAAAA : 0xFFBEBEBE;

@@ -42,6 +42,15 @@
   "tooltip.bookeditor.text_color": "पाठ का रंग",
   "tooltip.bookeditor.go_to_page": "पृष्ठ पर जाएँ",
 
-  "narrator.select.color": "रंग चुनें"
-}
+  "narrator.select.color": "रंग चुनें",
 
+  "screen.bookeditor.size_limit_reached": "पुस्तक आकार सीमा तक पहुँच गई - आगे के परिवर्तन अक्षम हैं",
+  "screen.bookeditor.page_not_saved": "पृष्ठ सहेजा नहीं गया: पुस्तक आकार सीमा तक पहुँच गई",
+  "screen.bookeditor.failed_save": "पृष्ठ को सहेजने में विफल: डेटा सीमाओं से अधिक है",
+  "screen.bookeditor.size_limit_reached_with_size": "पुस्तक आकार सीमा तक पहुँच गई - %s / %s",
+  "screen.bookeditor.nbt_usage_percent": "%d%% उपयोग किया गया",
+  "screen.bookeditor.nbt_mode_changed": "NBT प्रदर्शन मोड: %s",
+  "screen.bookeditor.nbt_mode_progress": "प्रगति",
+  "screen.bookeditor.nbt_mode_size": "आकार",
+  "screen.bookeditor.nbt_mode_hide": "छिपा हुआ"
+}

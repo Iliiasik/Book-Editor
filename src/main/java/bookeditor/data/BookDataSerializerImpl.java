@@ -6,12 +6,15 @@ import net.minecraft.nbt.*;
 import net.minecraft.text.Text;
 
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class BookDataSerializerImpl implements IBookDataSerializer {
 
     private static final int MAX_TITLE_LEN = 512;
     private static final int MAX_AUTHOR_LEN = 256;
     private static final int MAX_PAGES = 256;
+    private static final Logger LOGGER = Logger.getLogger(BookDataSerializerImpl.class.getName());
 
     @Override
     public void ensureDefaults(ItemStack stack, PlayerEntity player) {
@@ -53,12 +56,12 @@ public class BookDataSerializerImpl implements IBookDataSerializer {
                 try {
                     d.pages.add(BookData.Page.fromNbt(pages.getCompound(i)));
                 } catch (RuntimeException ex) {
-                    System.err.println("BookDataSerializer: skipped page " + i + " due to error: " + ex.getMessage());
+                    LOGGER.log(Level.WARNING, "BookDataSerializer: skipped page {0} due to error: {1}", new Object[]{i, ex.getMessage()});
                 }
             }
 
         } catch (RuntimeException e) {
-            System.err.println("BookDataSerializer: failed to read NBT for book item: " + e.getMessage());
+            LOGGER.log(Level.SEVERE, "BookDataSerializer: failed to read NBT for book item: " + e.getMessage(), e);
             return d;
         }
         return d;
@@ -88,7 +91,7 @@ public class BookDataSerializerImpl implements IBookDataSerializer {
                 pages.add(pn);
                 added++;
             } catch (RuntimeException ex) {
-                System.err.println("BookDataSerializer: failed to serialize a page, skipping it: " + ex.getMessage());
+                LOGGER.log(Level.WARNING, "BookDataSerializer: failed to serialize a page, skipping it: {0}", ex.getMessage());
             }
         }
         cb.put(BookData.PAGES, pages);

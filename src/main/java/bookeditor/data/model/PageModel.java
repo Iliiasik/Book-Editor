@@ -7,8 +7,12 @@ import bookeditor.data.BookDataUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class PageModel {
+    private static final Logger LOGGER = Logger.getLogger(PageModel.class.getName());
+
     public final List<NodeModel> nodes = new ArrayList<>();
     public final List<StrokeModel> strokes = new ArrayList<>();
     public int bgArgb = 0xFFF8F8F8;
@@ -22,7 +26,7 @@ public class PageModel {
             try {
                 list.add(n.toNbt());
             } catch (RuntimeException ex) {
-                System.err.println("PageModel: failed to serialize node, skipping: " + ex.getMessage());
+                LOGGER.log(Level.WARNING, "PageModel: failed to serialize node, skipping: {0}", ex.getMessage());
             }
             addedNodes++;
         }
@@ -35,7 +39,7 @@ public class PageModel {
             try {
                 strokesNbt.add(s.toNbt());
             } catch (RuntimeException ex) {
-                System.err.println("PageModel: failed to serialize stroke, skipping: " + ex.getMessage());
+                LOGGER.log(Level.WARNING, "PageModel: failed to serialize stroke, skipping: {0}", ex.getMessage());
             }
             addedStrokes++;
         }
@@ -53,7 +57,7 @@ public class PageModel {
             try {
                 p.nodes.add(NodeModel.fromNbt(list.getCompound(i)));
             } catch (RuntimeException ex) {
-                System.err.println("PageModel: skipped node " + i + " due to error: " + ex.getMessage());
+                LOGGER.log(Level.WARNING, "PageModel: skipped node {0} due to error: {1}", new Object[]{i, ex.getMessage()});
             }
         }
 
@@ -64,7 +68,7 @@ public class PageModel {
                 try {
                     p.strokes.add(StrokeModel.fromNbt(sList.getCompound(i)));
                 } catch (RuntimeException ex) {
-                    System.err.println("PageModel: skipped stroke " + i + " due to error: " + ex.getMessage());
+                    LOGGER.log(Level.WARNING, "PageModel: skipped stroke {0} due to error: {1}", new Object[]{i, ex.getMessage()});
                 }
             }
         }

@@ -1,19 +1,19 @@
 package bookeditor.client.gui.widget.editor;
 
 import bookeditor.client.editor.mode.EditorMode;
+import bookeditor.client.editor.textbox.StyleParams;
 import bookeditor.client.editor.tools.DrawingTool;
 import bookeditor.data.BookData;
+import bookeditor.data.BookDataUtils;
 import org.lwjgl.glfw.GLFW;
 
 public class EditorToolManager {
     private final EditorState state;
     private final EditorHistoryManager historyManager;
-    private final EditorStyleManager styleManager;
 
-    public EditorToolManager(EditorState state, EditorHistoryManager historyManager, EditorStyleManager styleManager) {
+    public EditorToolManager(EditorState state, EditorHistoryManager historyManager) {
         this.state = state;
         this.historyManager = historyManager;
-        this.styleManager = styleManager;
     }
 
     public void deactivateAllTools() {
@@ -27,10 +27,23 @@ public class EditorToolManager {
     }
 
     public void setDrawingTool(DrawingTool tool) {
-        deactivateAllTools();
+        if (tool == null) {
+            deactivateAllTools();
+            return;
+        }
         if (tool == DrawingTool.ERASER) {
+            if (state.eraserTool.isActive()) {
+                deactivateAllTools();
+                return;
+            }
+            deactivateAllTools();
             state.eraserTool.setActive(true);
         } else {
+            if (state.drawingTool.isActive() && state.drawingTool.getCurrentTool() == tool) {
+                deactivateAllTools();
+                return;
+            }
+            deactivateAllTools();
             state.drawingTool.setTool(tool);
             state.drawingTool.setActive(true);
         }
@@ -61,6 +74,10 @@ public class EditorToolManager {
 
     public void insertImage(String url, int w, int h, boolean gif) {
         if (!state.editable || state.page == null) return;
+        if (state.page.nodes.size() >= BookDataUtils.MAX_NODES_PER_PAGE) {
+            state.showTransientMessage("Page node limit reached", 3000);
+            return;
+        }
         historyManager.pushSnapshotOnce();
         int maxImgW = Math.max(8, EditorState.LOGICAL_W);
         BookData.ImageNode img = new BookData.ImageNode(url, Math.max(8, Math.min(w, maxImgW)), Math.max(8, h), gif);
@@ -75,6 +92,10 @@ public class EditorToolManager {
 
     public void insertTextBox() {
         if (!state.editable || state.page == null) return;
+        if (state.page.nodes.size() >= BookDataUtils.MAX_NODES_PER_PAGE) {
+            state.showTransientMessage("Page node limit reached", 3000);
+            return;
+        }
         historyManager.pushSnapshotOnce();
         BookData.TextBoxNode box = new BookData.TextBoxNode(50, 50 + state.scrollY, 300, 100);
         box.bgArgb = state.textBoxBgColor;
@@ -116,6 +137,10 @@ public class EditorToolManager {
             return true;
         }
         if (state.drawingTool.isActive()) {
+            if (state.page.strokes.size() >= BookDataUtils.MAX_STROKES_PER_PAGE) {
+                state.showTransientMessage("Stroke limit reached", 3000);
+                return true;
+            }
             historyManager.pushSnapshotOnce();
             state.drawingTool.beginStroke(state.page, mx, my, state.contentScreenLeft(), state.contentScreenTop(), state.scale(), state.scrollY);
             return true;
@@ -169,7 +194,8 @@ public class EditorToolManager {
             }
         }
         historyManager.pushSnapshotOnce();
-        boolean handled = state.inputHandler.handleCharTyped(state.mode, state.page, state.textBoxInteraction, state.textBoxCaret, styleManager.getStyle(), chr);
+        StyleParams style = new StyleParams(state.bold, state.italic, state.underline, state.argb, state.size);
+        boolean handled = state.inputHandler.handleCharTyped(state.mode, state.page, state.textBoxInteraction, state.textBoxCaret, style, chr);
         if (handled) {
             state.editorRenderer.resetCaretBlink();
             historyManager.notifyDirty();
@@ -212,18 +238,6 @@ public class EditorToolManager {
                 return true;
             }
         }
-        if (!state.editable || state.page == null || state.drawingTool.isActive() || state.eraserTool.isActive() || state.textBoxCreationTool.isActive()) return false;
-        if (keyCode == GLFW.GLFW_KEY_LEFT || keyCode == GLFW.GLFW_KEY_RIGHT ||
-                keyCode == GLFW.GLFW_KEY_UP || keyCode == GLFW.GLFW_KEY_DOWN ||
-                keyCode == GLFW.GLFW_KEY_HOME || keyCode == GLFW.GLFW_KEY_END) {
-            state.editorRenderer.resetCaretBlink();
-        }
-        historyManager.pushSnapshotOnce();
-        boolean handled = state.inputHandler.handleKeyPressed(state.mode, state.page, state.textBoxInteraction, state.textBoxCaret, keyCode, modifiers);
-        if (handled) {
-            state.editorRenderer.resetCaretBlink();
-            historyManager.notifyDirty();
-        }
-        return handled;
+        return state.inputHandler.handleKeyPressed(state.mode, state.page, state.textBoxInteraction, state.textBoxCaret, keyCode, modifiers);
     }
 }

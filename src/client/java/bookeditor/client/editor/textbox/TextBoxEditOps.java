@@ -2,18 +2,23 @@ package bookeditor.client.editor.textbox;
 
 import bookeditor.data.BookData;
 import bookeditor.data.BookDataUtils;
+import bookeditor.client.gui.widget.editor.EditorState;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class TextBoxEditOps {
 
-    public void insertChar(BookData.TextBoxNode box, TextBoxCaret caret, StyleParams style, char ch) {
+    public boolean insertChar(BookData.TextBoxNode box, TextBoxCaret caret, StyleParams style, char ch) {
+        String fullText = box.getFullText();
+        if (fullText.length() + 1 > EditorState.MAX_TEXTBOX_CHARS) {
+            return false;
+        }
+
         if (caret.hasSelection()) {
             deleteSelection(box, caret);
         }
 
-        String fullText = box.getFullText();
         int insertIndex = caret.getCharIndex();
 
         if (insertIndex < 0) insertIndex = 0;
@@ -63,7 +68,7 @@ public class TextBoxEditOps {
                 caret.setCharIndex(insertIndex + 1);
                 caret.clearSelection();
                 mergeAdjacentSegments(box);
-                return;
+                return true;
             }
             currentPos += segLen;
         }
@@ -81,6 +86,7 @@ public class TextBoxEditOps {
         caret.setCharIndex(insertIndex + 1);
         caret.clearSelection();
         mergeAdjacentSegments(box);
+        return true;
     }
 
     public void backspace(BookData.TextBoxNode box, TextBoxCaret caret) {

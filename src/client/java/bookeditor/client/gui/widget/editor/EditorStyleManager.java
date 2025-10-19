@@ -26,7 +26,6 @@ public class EditorStyleManager {
 
     public void setColor(int argb) {
         state.argb = argb;
-        state.drawingTool.setColor(argb);
     }
 
     public void setSize(float size) {
@@ -107,7 +106,11 @@ public class EditorStyleManager {
             if (node instanceof BookData.TextBoxNode box) {
                 historyManager.pushSnapshotOnce();
                 for (char ch : state.clipboard.toCharArray()) {
-                    state.textBoxOps.insertChar(box, state.textBoxCaret, style(), ch);
+                    boolean ok = state.textBoxOps.insertChar(box, state.textBoxCaret, style(), ch);
+                    if (!ok) {
+                        state.showTransientMessage("Content limit reached", 3000);
+                        break;
+                    }
                 }
                 historyManager.notifyDirty();
             }

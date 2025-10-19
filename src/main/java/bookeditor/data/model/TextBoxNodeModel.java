@@ -7,8 +7,12 @@ import bookeditor.data.BookDataUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class TextBoxNodeModel extends NodeModel {
+    private static final Logger LOGGER = Logger.getLogger(TextBoxNodeModel.class.getName());
+
     public int x;
     public int y;
     public int width;
@@ -41,7 +45,7 @@ public class TextBoxNodeModel extends NodeModel {
             try {
                 segList.add(seg.toNbt());
             } catch (RuntimeException ex) {
-                System.err.println("TextBoxNodeModel: failed to serialize segment, skipping: " + ex.getMessage());
+                LOGGER.log(Level.WARNING, "TextBoxNodeModel: failed to serialize segment, skipping: {0}", ex.getMessage());
             }
             added++;
         }
@@ -59,7 +63,7 @@ public class TextBoxNodeModel extends NodeModel {
                 try {
                     box.segments.add(TextSegmentModel.fromNbt(segList.getCompound(i)));
                 } catch (RuntimeException ex) {
-                    System.err.println("TextBoxNodeModel: skipped segment " + i + " due to error: " + ex.getMessage());
+                    LOGGER.log(Level.WARNING, "TextBoxNodeModel: skipped segment {0} due to error: {1}", new Object[]{i, ex.getMessage()});
                 }
             }
         }

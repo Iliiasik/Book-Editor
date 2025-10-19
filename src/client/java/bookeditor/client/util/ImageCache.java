@@ -9,10 +9,17 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public final class ImageCache {
     private static final Map<String, Identifier> CACHE = new ConcurrentHashMap<>();
     private static final Map<Identifier, Boolean> LOADED = new ConcurrentHashMap<>();
+    private static final ExecutorService EXECUTOR = Executors.newCachedThreadPool(r -> {
+        Thread t = new Thread(r, "BookEditor-ImageLoader");
+        t.setDaemon(true);
+        return t;
+    });
 
     public static Identifier getTexture(String url) {
         if (url == null || url.isEmpty()) return null;
@@ -27,9 +34,9 @@ public final class ImageCache {
     }
 
     private static Identifier download(String url) {
-        String path = "bookeditor/img/" + Integer.toHexString(url.hashCode());
-        Identifier id = new Identifier(path);
-        new Thread(() -> {
+        String path = "textures/bookeditor/img/" + Integer.toHexString(url.hashCode());
+        Identifier id = new Identifier("bookeditor", path);
+        EXECUTOR.submit(() -> {
             try (InputStream in = new URL(url).openStream()) {
                 NativeImage img = NativeImage.read(in);
                 NativeImageBackedTexture tex = new NativeImageBackedTexture(img);
@@ -40,7 +47,7 @@ public final class ImageCache {
             } catch (Exception ex) {
                 LOADED.put(id, false);
             }
-        }, "BookEditor-ImageLoader").start();
+        });
         return id;
     }
 

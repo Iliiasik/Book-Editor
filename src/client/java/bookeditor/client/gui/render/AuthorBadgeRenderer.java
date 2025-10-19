@@ -28,9 +28,7 @@ public final class AuthorBadgeRenderer {
         int badgeW = padX * 2 + nameW;
         int groupW = (data.authorName == null || data.authorName.isEmpty()) ? headSize : headSize + gap + badgeW;
 
-        int groupLeft = centerX - groupW / 2;
-        int headX = groupLeft;
-        int headY = y;
+        int headX = centerX - groupW / 2;
 
         if (data.title != null && !data.title.isEmpty()) {
             int titleW = textRenderer.getWidth(data.title);
@@ -59,7 +57,7 @@ public final class AuthorBadgeRenderer {
             var skull = SkullStackUtil.playerHeadStack(data.authorName, data.authorUuid);
             float scale = headSize / 16f;
             ctx.getMatrices().push();
-            ctx.getMatrices().translate(headX, headY, 0);
+            ctx.getMatrices().translate(headX, y, 0);
             ctx.getMatrices().scale(scale, scale, 1f);
             ctx.drawItem(skull, 0, 0);
             ctx.getMatrices().pop();

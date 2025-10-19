@@ -9,7 +9,6 @@ import net.minecraft.text.Text;
 import java.util.function.Consumer;
 import java.util.function.IntSupplier;
 
-@SuppressWarnings("unused")
 public class HistorySectionBuilder implements ToolbarSectionBuilder {
     @Override
     public SectionBuildResult build(WidgetHost host, EditorWidget editor, Runnable onDirty,

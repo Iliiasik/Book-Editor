@@ -42,6 +42,15 @@
   "tooltip.bookeditor.text_color": "文字颜色",
   "tooltip.bookeditor.go_to_page": "前往页面",
 
-  "narrator.select.color": "选择颜色"
-}
+  "narrator.select.color": "选择颜色",
 
+  "screen.bookeditor.size_limit_reached": "书籍大小限制已达到 - 禁用进一步更改",
+  "screen.bookeditor.page_not_saved": "页面未保存：书籍大小限制已达到",
+  "screen.bookeditor.failed_save": "保存页面失败：数据超过限制",
+  "screen.bookeditor.size_limit_reached_with_size": "书籍大小限制已达到 - %s / %s",
+  "screen.bookeditor.nbt_usage_percent": "%d%% 已使用",
+  "screen.bookeditor.nbt_mode_changed": "NBT 显示模式：%s",
+  "screen.bookeditor.nbt_mode_progress": "进度",
+  "screen.bookeditor.nbt_mode_size": "大小",
+  "screen.bookeditor.nbt_mode_hide": "隐藏"
+}

@@ -42,6 +42,15 @@
   "tooltip.bookeditor.text_color": "텍스트 색상",
   "tooltip.bookeditor.go_to_page": "페이지로 이동",
 
-  "narrator.select.color": "색상 선택"
-}
+  "narrator.select.color": "색상 선택",
 
+  "screen.bookeditor.size_limit_reached": "책 크기 제한에 도달했습니다. 더 이상의 변경이 비활성화됩니다.",
+  "screen.bookeditor.page_not_saved": "페이지가 저장되지 않았습니다: 책 크기 제한에 도달했습니다.",
+  "screen.bookeditor.failed_save": "페이지 저장 실패: 데이터가 제한을 초과합니다.",
+  "screen.bookeditor.size_limit_reached_with_size": "책 크기 제한에 도달했습니다 — %s / %s",
+  "screen.bookeditor.nbt_usage_percent": "%d%% 사용됨",
+  "screen.bookeditor.nbt_mode_changed": "NBT 표시 모드: %s",
+  "screen.bookeditor.nbt_mode_progress": "진행 상황",
+  "screen.bookeditor.nbt_mode_size": "크기",
+  "screen.bookeditor.nbt_mode_hide": "숨김"
+}

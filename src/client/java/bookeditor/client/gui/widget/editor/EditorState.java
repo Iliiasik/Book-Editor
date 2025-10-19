@@ -45,9 +45,13 @@ public class EditorState {
     public final TextBoxRenderer textBoxRenderer = new TextBoxRenderer();
     public final TextBoxEditOps textBoxOps = new TextBoxEditOps();
     public final EditorRenderer editorRenderer = new EditorRenderer();
-    public final EditorInputHandler inputHandler = new EditorInputHandler();
+    public final EditorInputHandler inputHandler = new EditorInputHandler(this);
     public final EditorMouseHandler mouseHandler = new EditorMouseHandler();
     private final EditorWidget widget;
+
+    private String transientMessage = null;
+    private long transientExpiryMillis = 0L;
+
     public EditorState(TextRenderer textRenderer, boolean editable, Consumer<String> onImageUrlSeen, Runnable onDirty, EditorWidget widget) {
         this.textRenderer = textRenderer;
         this.editable = editable;
@@ -55,6 +59,7 @@ public class EditorState {
         this.onDirty = onDirty;
         this.widget = widget;
     }
+
     public void setHeight(int height) {
         widget.setWidgetHeight(Math.max(40, height));
     }
@@ -73,6 +78,7 @@ public class EditorState {
         eraserTool.setActive(false);
         scrollY = 0;
     }
+
     public int innerLeft() {
         return widget.getX() + PAD_OUT;
     }
@@ -106,5 +112,19 @@ public class EditorState {
     }
     public EditorWidget getWidget() {
         return widget;
+    }
+
+    public void showTransientMessage(String msg, long durationMillis) {
+        this.transientMessage = msg;
+        this.transientExpiryMillis = System.currentTimeMillis() + durationMillis;
+    }
+
+    public String getTransientMessage() {
+        if (transientMessage == null) return null;
+        if (System.currentTimeMillis() > transientExpiryMillis) {
+            transientMessage = null;
+            return null;
+        }
+        return transientMessage;
     }
 }

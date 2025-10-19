@@ -5,13 +5,18 @@ import bookeditor.client.editor.textbox.StyleParams;
 import bookeditor.client.editor.textbox.TextBoxCaret;
 import bookeditor.client.editor.textbox.TextBoxEditOps;
 import bookeditor.client.editor.interaction.TextBoxInteraction;
+import bookeditor.client.gui.widget.editor.EditorState;
 import bookeditor.data.BookData;
 import org.lwjgl.glfw.GLFW;
 
 import static net.minecraft.client.gui.screen.Screen.hasControlDown;
 
 public class EditorInputHandler {
-    private final TextBoxEditOps textBoxOps = new TextBoxEditOps();
+    private final EditorState state;
+
+    public EditorInputHandler(EditorState state) {
+        this.state = state;
+    }
 
     public boolean handleCharTyped(EditorMode mode, BookData.Page page, TextBoxInteraction textBoxInteraction,
                                    TextBoxCaret textBoxCaret, StyleParams style, char chr) {
@@ -26,7 +31,11 @@ public class EditorInputHandler {
         if (chr == '\r') chr = '\n';
         if (chr < 32 && chr != '\n' && chr != '\t') return false;
 
-        textBoxOps.insertChar(box, textBoxCaret, style, chr);
+        boolean ok = state.textBoxOps.insertChar(box, textBoxCaret, style, chr);
+        if (!ok) {
+            state.showTransientMessage("Content limit reached", 3000);
+            return false;
+        }
         return true;
     }
 
@@ -48,13 +57,17 @@ public class EditorInputHandler {
         }
 
         if (keyCode == GLFW.GLFW_KEY_BACKSPACE) {
-            textBoxOps.backspace(box, textBoxCaret);
+            state.textBoxOps.backspace(box, textBoxCaret);
             return true;
         } else if (keyCode == GLFW.GLFW_KEY_DELETE) {
-            textBoxOps.deleteForward(box, textBoxCaret);
+            state.textBoxOps.deleteForward(box, textBoxCaret);
             return true;
         } else if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
-            textBoxOps.insertChar(box, textBoxCaret, new StyleParams(false, false, false, 0xFF202020, 1.0f), '\n');
+            boolean ok = state.textBoxOps.insertChar(box, textBoxCaret, new StyleParams(false, false, false, 0xFF202020, 1.0f), '\n');
+            if (!ok) {
+                state.showTransientMessage("Content limit reached", 3000);
+                return false;
+            }
             return true;
         } else if (keyCode == GLFW.GLFW_KEY_LEFT) {
             if ((modifiers & GLFW.GLFW_MOD_SHIFT) != 0) {

@@ -7,6 +7,7 @@ import bookeditor.client.gui.widget.field.NumericTextField;
 import bookeditor.client.gui.widget.editor.EditorWidget;
 import bookeditor.client.util.IconUtils;
 import net.minecraft.text.Text;
+import bookeditor.client.editor.tools.DrawingTool;
 
 import java.util.function.Consumer;
 import java.util.function.IntSupplier;
@@ -20,38 +21,50 @@ public class DrawingToolsSectionBuilder implements ToolbarSectionBuilder {
         ToolbarSection section = new ToolbarSection("Drawing");
 
         IconButton brush = new IconButton(0, 0, 18, btnH, IconUtils.ICON_BRUSH, Text.translatable("tooltip.bookeditor.brush"), b -> {
+            editor.setDrawingTool(DrawingTool.BRUSH);
+            onDirty.run();
         });
-        brush.visible = false;
+        brush.visible = true;
         host.addDrawable(brush);
         section.addWidget(brush, 18);
 
         IconButton spray = new IconButton(0, 0, 18, btnH, IconUtils.ICON_SPRAY, Text.translatable("tooltip.bookeditor.spray"), b -> {
+            editor.setDrawingTool(DrawingTool.SPRAY);
+            onDirty.run();
         });
-        spray.visible = false;
+        spray.visible = true;
         host.addDrawable(spray);
         section.addWidget(spray, 18);
 
         IconButton line = new IconButton(0, 0, 18, btnH, IconUtils.ICON_LINE, Text.translatable("tooltip.bookeditor.line"), b -> {
+            editor.setDrawingTool(DrawingTool.LINE);
+            onDirty.run();
         });
-        line.visible = false;
+        line.visible = true;
         host.addDrawable(line);
         section.addWidget(line, 18);
 
         IconButton rectangle = new IconButton(0, 0, 18, btnH, IconUtils.ICON_RECTANGLE, Text.translatable("tooltip.bookeditor.rectangle"), b -> {
+            editor.setDrawingTool(DrawingTool.RECTANGLE);
+            onDirty.run();
         });
-        rectangle.visible = false;
+        rectangle.visible = true;
         host.addDrawable(rectangle);
         section.addWidget(rectangle, 18);
 
         IconButton circle = new IconButton(0, 0, 18, btnH, IconUtils.ICON_CIRCLE, Text.translatable("tooltip.bookeditor.circle"), b -> {
+            editor.setDrawingTool(DrawingTool.CIRCLE);
+            onDirty.run();
         });
-        circle.visible = false;
+        circle.visible = true;
         host.addDrawable(circle);
         section.addWidget(circle, 18);
 
         IconButton eraser = new IconButton(0, 0, 18, btnH, IconUtils.ICON_ERASER, Text.translatable("tooltip.bookeditor.eraser"), b -> {
+            editor.setDrawingTool(DrawingTool.ERASER);
+            onDirty.run();
         });
-        eraser.visible = false;
+        eraser.visible = true;
         host.addDrawable(eraser);
         section.addWidget(eraser, 18);
 

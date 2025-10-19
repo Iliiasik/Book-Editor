@@ -22,12 +22,12 @@ public class ContentSectionBuilder implements ToolbarSectionBuilder {
             editor.activateTextBoxTool();
             onDirty.run();
         });
-        textboxBtn.visible = false;
+        textboxBtn.visible = true;
         host.addDrawable(textboxBtn);
         section.addWidget(textboxBtn, 18);
 
         IconButton imageBtn = new IconButton(0, 0, 18, btnH, IconUtils.ICON_IMAGE, Text.translatable("tooltip.bookeditor.image"), b -> openInsertDialog.run());
-        imageBtn.visible = false;
+        imageBtn.visible = true;
         host.addDrawable(imageBtn);
         section.addWidget(imageBtn, 18);
 

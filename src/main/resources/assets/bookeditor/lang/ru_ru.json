@@ -37,9 +37,14 @@
   "tooltip.bookeditor.align_right": "Выровнять вправо",
   "tooltip.bookeditor.text_color": "Цвет текста",
   "narrator.select.color": "Выбрать цвет",
-  "tooltip.bookeditor.go_to_page": "Перейти на страницу",
 
-  "screen.bookeditor.url_label": "Ссылка на изображение:",
-  "screen.bookeditor.width_label": "Ширина",
-  "screen.bookeditor.height_label": "Высота"
+  "screen.bookeditor.size_limit_reached": "Превышен лимит размера книги — дальнейшие изменения отключены",
+  "screen.bookeditor.page_not_saved": "Страница не сохранена: превышен лимит размера книги",
+  "screen.bookeditor.failed_save": "Не удалось сохранить страницу: данные превышают лимиты",
+  "screen.bookeditor.size_limit_reached_with_size": "Превышен лимит размера книги — %s / %s",
+  "screen.bookeditor.nbt_usage_percent": "%d%% использовано",
+  "screen.bookeditor.nbt_mode_changed": "Режим отображения NBT: %s",
+  "screen.bookeditor.nbt_mode_progress": "Прогресс",
+  "screen.bookeditor.nbt_mode_size": "Размер",
+  "screen.bookeditor.nbt_mode_hide": "Скрыто"
 }

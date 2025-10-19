@@ -6,6 +6,8 @@ import bookeditor.client.gui.widget.button.ColorPickerDropdown;
 import bookeditor.client.gui.widget.button.IconButton;
 import bookeditor.client.gui.widget.field.NumericTextField;
 import bookeditor.client.gui.widget.editor.EditorWidget;
+import bookeditor.data.BookDataUtils;
+import net.minecraft.text.Text;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -42,6 +44,9 @@ public class AdaptiveToolbar {
     private ColorPickerDropdown canvasColorBtn;
 
     private final Map<DrawingTool, IconButton> toolButtonMap = new HashMap<>();
+
+    private IconButton textboxBtn;
+    private IconButton imageBtn;
 
     public AdaptiveToolbar(WidgetHost host, EditorWidget editor, Runnable onDirty,
                            IntSupplier getCanvasColor, Consumer<Integer> setCanvasColor,
@@ -99,10 +104,12 @@ public class AdaptiveToolbar {
 
         res = new ContentSectionBuilder().build(host, editor, onDirty, getCanvasColor, setCanvasColor, openInsertDialog, createNewPage, deleteCurrentPage, signAction, btnH);
         sections.add(res.section);
+        Object o;
+        o = res.get("textboxBtn"); if (o instanceof IconButton) textboxBtn = (IconButton)o;
+        o = res.get("imageBtn"); if (o instanceof IconButton) imageBtn = (IconButton)o;
 
         res = new DrawingToolsSectionBuilder().build(host, editor, onDirty, getCanvasColor, setCanvasColor, openInsertDialog, createNewPage, deleteCurrentPage, signAction, btnH);
         sections.add(res.section);
-        Object o;
         o = res.get("brushBtn"); if (o instanceof IconButton) toolButtonMap.put(DrawingTool.BRUSH, (IconButton)o);
         o = res.get("sprayBtn"); if (o instanceof IconButton) toolButtonMap.put(DrawingTool.SPRAY, (IconButton)o);
         o = res.get("lineBtn"); if (o instanceof IconButton) toolButtonMap.put(DrawingTool.LINE, (IconButton)o);
@@ -136,6 +143,41 @@ public class AdaptiveToolbar {
         editor.syncStylesFromSelection();
         refreshFormatButtons();
         updateToolHighlights();
+        updateLimitButtons();
+    }
+
+    private void updateLimitButtons() {
+        if (editor == null) return;
+        boolean editable = editor.isEditable();
+        int nodeCount = editor.getPageNodeCount();
+        int strokeCount = editor.getPageStrokeCount();
+
+        boolean canAddNode = editable && nodeCount < BookDataUtils.MAX_NODES_PER_PAGE;
+        boolean canAddStroke = editable && strokeCount < BookDataUtils.MAX_STROKES_PER_PAGE;
+
+        var currentTool = editor.getCurrentDrawingTool();
+
+        if (textboxBtn != null) {
+            boolean enable = canAddNode || editor.isTextBoxToolActive();
+            textboxBtn.active = enable;
+            if (!enable) textboxBtn.setTooltip(net.minecraft.client.gui.tooltip.Tooltip.of(Text.literal("Node limit reached")));
+        }
+        if (imageBtn != null) {
+            boolean enable = canAddNode;
+            imageBtn.active = enable;
+            if (!enable) imageBtn.setTooltip(net.minecraft.client.gui.tooltip.Tooltip.of(Text.literal("Node limit reached")));
+        }
+
+        for (Map.Entry<DrawingTool, IconButton> entry : toolButtonMap.entrySet()) {
+            IconButton b = entry.getValue();
+            DrawingTool dt = entry.getKey();
+            boolean enable = canAddStroke || (currentTool != null && (
+                    (dt == DrawingTool.ERASER && currentTool == DrawingTool.ERASER) ||
+                    (currentTool == dt)
+            ));
+            b.active = enable;
+            if (!enable) b.setTooltip(net.minecraft.client.gui.tooltip.Tooltip.of(Text.literal("Stroke limit reached")));
+        }
     }
 
     public void refreshFormatButtons() {

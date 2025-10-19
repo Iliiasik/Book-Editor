@@ -23,7 +23,7 @@ public class EditorWidget extends ClickableWidget {
         this.state = new EditorState(textRenderer, editable, onImageUrlSeen, onDirty, this);
         this.historyManager = new EditorHistoryManager(state);
         this.styleManager = new EditorStyleManager(state, historyManager);
-        this.toolManager = new EditorToolManager(state, historyManager, styleManager);
+        this.toolManager = new EditorToolManager(state, historyManager);
         this.rendererManager = new EditorRendererManager(state, toolManager, styleManager);
         this.active = editable;
     }
@@ -74,6 +74,11 @@ public class EditorWidget extends ClickableWidget {
     public boolean isItalic() { return styleManager.isItalic(); }
     public boolean isUnderline() { return styleManager.isUnderline(); }
     public float getSize() { return styleManager.getSize(); }
+    public void showTransientMessage(String msg, long durationMillis) { state.showTransientMessage(msg, durationMillis); }
+
+    public boolean isEditable() { return state.editable; }
+    public int getPageNodeCount() { return state.page == null ? 0 : state.page.nodes.size(); }
+    public int getPageStrokeCount() { return state.page == null ? 0 : state.page.strokes.size(); }
 
     @Override
     protected void renderButton(DrawContext ctx, int mouseX, int mouseY, float delta) {
@@ -106,4 +111,6 @@ public class EditorWidget extends ClickableWidget {
     }
     @Override
     protected void appendClickableNarrations(NarrationMessageBuilder builder) {}
+
+    public boolean isTextBoxToolActive() { return state.textBoxCreationTool.isActive(); }
 }
