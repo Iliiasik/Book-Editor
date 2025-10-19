@@ -29,8 +29,8 @@ This item unlocks advanced book editing features:
 ---
 
 <p align="center">
-  <img width="420" alt="Drawing Tools" src="https://github.com/user-attachments/assets/f678ec22-d05f-4df3-a27b-bd29c9bca35c" />
-  <img width="420" alt="Textbox Editing" src="https://github.com/user-attachments/assets/08d8fb0d-616f-420d-ae98-39cd6dd85e11" />
+  <img width="420" alt="Drawing Tools" src="https://github.com/user-attachments/assets/f678ec22-d05f-4df3-a27b-bd29c9bca35c" style="margin-right: 24px;" />
+  <img width="420" alt="Textbox Editing" src="https://github.com/user-attachments/assets/08d8fb0d-616f-420d-ae98-39cd6dd85e11" style="margin-left: 24px;" />
 </p>
 <p align="center">
   <img width="420" alt="Image Insert" src="https://github.com/user-attachments/assets/17d4f5ee-3348-4f9e-be71-d02c4e5bfe57" />
