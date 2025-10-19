@@ -3,110 +3,100 @@
 </h3>
 
 <p align="center">
-  <a href="https://fabricmc.net/">
-    <img src="https://img.shields.io/badge/Fabric-1.20.1-blue?style=for-the-badge&logo=fabric" alt="Fabric 1.20.1"/>
+  <a href="https://modrinth.com/mod/book-editor">
+    <img src="https://img.shields.io/modrinth/dt/book-editor?color=green&style=for-the-badge&logo=modrinth" alt="Modrinth Downloads"/>
   </a>
 </p>
 
+---
+
 ## Description
 
-Book Editor adds a WYSIWYG-like editor to a creative book item: format text, insert and position images, draw on a canvas, set page backgrounds, and manage multiple pages.  
-You can sign a book to lock it from editing, automatically show the author badge, and have the item display the book’s title.
+Creative Book Editor introduces a new item: the **Creative Book**, crafted from a feather, gold nugget, and paper.
 
-- Rich text: bold, italic, underline, color, size, alignment
-- Images: insert by URL, absolute positioning, prefetch
-- Canvas: brush tool with size/color, per-page background color
-- Pages: add/delete, navigate, undo/redo
-- Signing: lock edits, show author and title as the item’s name
-- Icon swap: editable vs signed book icon via model predicate
+<p align="center">
+  <img width="380" alt="Crafting Recipe" src="https://github.com/user-attachments/assets/c075b751-f28c-41ea-a69e-2c0e43bed127" />
+</p>
+
+---
+
+This item unlocks advanced book editing features:
+- Draw directly onto book pages with creative tools  
+- Add and edit textboxes anywhere  
+- Insert online images via URL for instant in-book preview  
 
 ---
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/a1a888b8-7bd9-455c-a9fc-d6a88309d64c" width="700" alt="Editor Overview"/>
+  <img width="420" alt="Drawing Tools" src="https://github.com/user-attachments/assets/f678ec22-d05f-4df3-a27b-bd29c9bca35c" />
+  <img width="420" alt="Textbox Editing" src="https://github.com/user-attachments/assets/08d8fb0d-616f-420d-ae98-39cd6dd85e11" />
 </p>
+<p align="center">
+  <img width="420" alt="Image Insert" src="https://github.com/user-attachments/assets/17d4f5ee-3348-4f9e-be71-d02c4e5bfe57" />
+</p>
+
+---
+
+Books can be shared with friends for collaborative editing.  
+When finished, simply sign the book to lock further edits and confirm your authorship.
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/39b09266-d3a0-43a6-8475-8982090fd7de" width="600" alt="Page View and Tools"/>
+  <img width="420" alt="Signed Book" src="https://github.com/user-attachments/assets/f315a1e8-d377-4eeb-b2e8-086af28ef3cc" />
 </p>
 
-## Crafting
+---
 
-The Creative Book can be crafted using:
-- 1 Feather
-- 1 Paper
-- 1 Gold Nugget
-
-Arrange these items in any shape in the crafting grid to obtain the book.
+To ensure stability, the mod monitors the book's NBT size.  
+If the NBT limit is reached, editing is blocked and a warning appears.
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/4a558f7e-e31e-40fd-b114-f69952e0e49a" width="600" alt="Book Crafting and Formatting"/>
+  <img width="420" alt="Locked Book" src="https://github.com/user-attachments/assets/6d196a0b-605c-4868-98d9-b60b3aed023e" />
 </p>
 
-## How to use
+---
 
-- Get the item: Craft it, find in creative inventory, or use command: `/give @p bookeditor:creative_book`
-- Open the editor by using the item.
-- Toolbars:
-  - Formatting: bold/italic/underline, color, size, alignment
-  - Canvas: brush on/off, brush size, background color, insert image, new/delete page, sign
-- Keyboard:
-  - <kbd>Ctrl</kbd>+<kbd>B</kbd> / <kbd>Ctrl</kbd>+<kbd>I</kbd> / <kbd>Ctrl</kbd>+<kbd>U</kbd> — toggles bold/italic/underline
-  - <kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd> — undo/redo
-  - <kbd>Ctrl</kbd>+<kbd>Enter</kbd> — sign the book
-- After signing:
-  - The book becomes read-only
-  - Author badge is shown
-  - Item name displays the book title
+<p align="center">
+  <img width="420" alt="Book Example" src="https://github.com/user-attachments/assets/2ddb4a0d-6352-4d36-a0a4-c2146a6b0ac6" />
+</p>
 
-## Installation
+---
 
-Requirements:
-- Minecraft: 1.20.1
-- Java: 17
-- Fabric Loader: 0.17.2 or newer
-- Fabric API: 1.20.1 build (recommended ≥ 0.83.0+1.20.1)
+## Features
 
-Steps:
-1. Install Fabric Loader for 1.20.1.
-2. Put Fabric API for 1.20.1 in the `mods` folder.
-3. Put `bookeditor-<version>.jar` in the `mods` folder.
+- Intuitive GUI: draw, write, insert images from the web  
+- Share and collaboratively edit books  
+- Sign books to lock editing and confirm authorship  
+- Automatic NBT limit protection (prevents Minecraft crashes)  
+- Multilingual support:
+  - Arabic (ar)
+  - Russian (ru)
+  - Spanish (es)
+  - English (en)
+  - French (fr)
+  - Simplified Chinese (zh)
+  - Korean (ko)
+  - Italian (it)
+  - Hindi (hi)
+  - German (de)
 
-## Features in detail
+---
 
-- **Text editing**
-  - Rich formatting with live rendering
-  - Undo/Redo stack
-  - Multi-line text with alignment
-- **Images**
-  - Insert by URL, absolute positioning
-  - Prefetches textures to avoid delays when flipping pages
-- **Drawing canvas**
-  - Brush on/off indicator, size control
-  - Per-page background color
-- **Pages and navigation**
-  - Add/Delete pages
-  - Jump to page, previous/next
-- **Signing and display**
-  - Signing locks editing, records author name/UUID
-  - Item name shows the book title based on NBT (like vanilla signed books)
-  - Item icon switches between editable/signed models via a custom predicate
+## Requirements
 
-## Localization
+- Minecraft `1.20.1`
+- [Fabric API](https://modrinth.com/mod/fabric-api) `0.92.6+1.20.1`
 
-- Included: English (`en_us`), Russian (`ru_ru`)
-- Easy to add more: create a new JSON in `assets/bookeditor/lang/<locale>.json` and translate keys
-
-## Build from source
-
-- JDK 17 required
-- Commands:
-  - Build: `./gradlew clean build`
-  - Run client: `./gradlew runClient`
-- Output:
-  - `build/libs/bookeditor-<version>.jar` — use this in `mods`
-  - `build/libs/bookeditor-<version>-sources.jar` — sources (for developers)
+---
 
 ## License
 
-Apache-2.0 © [Iliiasik](https://github.com/Iliiasik)
+Apache 2.0 © [Iliiasik](https://github.com/Iliiasik)
+
+---
+
+**Repository:** [Iliiasik/Book-Editor](https://github.com/Iliiasik/Book-Editor)
+
+If you find bugs, please [open an issue](https://github.com/Iliiasik/Book-Editor/issues).  
+Pull requests are welcome.
+
+> The mod is still in beta.
