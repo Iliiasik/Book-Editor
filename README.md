@@ -5,10 +5,11 @@
 <p align="center">
   <a href="https://modrinth.com/mod/book-editor">
     <img src="https://img.shields.io/modrinth/dt/book-editor?color=green&style=for-the-badge&logo=modrinth" alt="Modrinth Downloads"/>
+  </a><br>
+  <a href="https://www.codefactor.io/repository/github/iliiasik/book-editor/overview/main">
+    <img src="https://www.codefactor.io/repository/github/iliiasik/book-editor/badge/main" alt="CodeFactor"/>
   </a>
 </p>
-
----
 
 ## Description
 
