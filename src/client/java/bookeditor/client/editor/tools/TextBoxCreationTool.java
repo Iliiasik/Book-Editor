@@ -1,4 +1,4 @@
-package bookeditor.client.editor.textbox;
+package bookeditor.client.editor.tools;
 
 import net.minecraft.client.gui.DrawContext;
 

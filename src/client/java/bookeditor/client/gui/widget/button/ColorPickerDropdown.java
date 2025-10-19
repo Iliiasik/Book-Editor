@@ -1,4 +1,4 @@
-package bookeditor.client.gui.widget;
+package bookeditor.client.gui.widget.button;
 
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.widget.ClickableWidget;

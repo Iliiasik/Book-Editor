@@ -3,7 +3,9 @@ package bookeditor.client;
 import bookeditor.client.gui.screen.BookScreen;
 import bookeditor.data.BookData;
 import bookeditor.platform.Services;
+import bookeditor.net.BookNetworking;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.item.ModelPredicateProviderRegistry;
 import net.minecraft.item.Item;
@@ -31,5 +33,15 @@ public class BookeditorClient implements ClientModInitializer {
                     return d.signed ? 1.0f : 0.0f;
                 }
         );
+
+        ClientPlayNetworking.registerGlobalReceiver(BookNetworking.UPDATE_BOOK_TOO_LARGE, (client, handler, buf, responseSender) -> {
+            buf.readString(32767);
+            client.execute(() -> {
+                var screen = client.currentScreen;
+                if (screen instanceof BookScreen bs) {
+                    bs.setNbtTooLarge(true);
+                }
+            });
+        });
     }
 }

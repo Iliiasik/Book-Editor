@@ -1,4 +1,4 @@
-package bookeditor.client.editor.text;
+package bookeditor.client.editor.textbox;
 
 public class StyleParams {
     public boolean bold;

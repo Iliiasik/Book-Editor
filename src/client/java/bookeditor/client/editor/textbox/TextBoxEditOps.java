@@ -1,19 +1,24 @@
 package bookeditor.client.editor.textbox;
 
-import bookeditor.client.editor.text.StyleParams;
 import bookeditor.data.BookData;
+import bookeditor.data.BookDataUtils;
+import bookeditor.client.gui.widget.editor.EditorState;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class TextBoxEditOps {
 
-    public void insertChar(BookData.TextBoxNode box, TextBoxCaret caret, StyleParams style, char ch) {
+    public boolean insertChar(BookData.TextBoxNode box, TextBoxCaret caret, StyleParams style, char ch) {
+        String fullText = box.getFullText();
+        if (fullText.length() + 1 > EditorState.MAX_TEXTBOX_CHARS) {
+            return false;
+        }
+
         if (caret.hasSelection()) {
             deleteSelection(box, caret);
         }
 
-        String fullText = box.getFullText();
         int insertIndex = caret.getCharIndex();
 
         if (insertIndex < 0) insertIndex = 0;
@@ -27,11 +32,11 @@ public class TextBoxEditOps {
             if (insertIndex <= currentPos + segLen) {
                 int localIndex = insertIndex - currentPos;
 
-                if (localIndex == 0 && i > 0 && box.segments.get(i - 1).sameStyle(segmentFromStyle(style))) {
+                if (localIndex == 0 && i > 0 && BookDataUtils.sameStyle(box.segments.get(i - 1), segmentFromStyle(style))) {
                     box.segments.get(i - 1).text += ch;
-                } else if (localIndex == segLen && seg.sameStyle(segmentFromStyle(style))) {
+                } else if (localIndex == segLen && BookDataUtils.sameStyle(seg, segmentFromStyle(style))) {
                     seg.text = seg.text + ch;
-                } else if (seg.sameStyle(segmentFromStyle(style))) {
+                } else if (BookDataUtils.sameStyle(seg, segmentFromStyle(style))) {
                     seg.text = seg.text.substring(0, localIndex) + ch + seg.text.substring(localIndex);
                 } else {
                     String before = seg.text.substring(0, localIndex);
@@ -39,7 +44,7 @@ public class TextBoxEditOps {
 
                     List<BookData.TextSegment> newSegs = new ArrayList<>();
                     if (!before.isEmpty()) {
-                        BookData.TextSegment beforeSeg = seg.copy();
+                        BookData.TextSegment beforeSeg = BookDataUtils.copySegment(seg);
                         beforeSeg.text = before;
                         newSegs.add(beforeSeg);
                     }
@@ -51,7 +56,7 @@ public class TextBoxEditOps {
                     newSegs.add(newSeg);
 
                     if (!after.isEmpty()) {
-                        BookData.TextSegment afterSeg = seg.copy();
+                        BookData.TextSegment afterSeg = BookDataUtils.copySegment(seg);
                         afterSeg.text = after;
                         newSegs.add(afterSeg);
                     }
@@ -63,12 +68,12 @@ public class TextBoxEditOps {
                 caret.setCharIndex(insertIndex + 1);
                 caret.clearSelection();
                 mergeAdjacentSegments(box);
-                return;
+                return true;
             }
             currentPos += segLen;
         }
 
-        if (box.segments.isEmpty() || !box.segments.get(box.segments.size() - 1).sameStyle(segmentFromStyle(style))) {
+        if (box.segments.isEmpty() || !BookDataUtils.sameStyle(box.segments.get(box.segments.size() - 1), segmentFromStyle(style))) {
             BookData.TextSegment newSeg = new BookData.TextSegment(
                     String.valueOf(ch), style.bold, style.italic, style.underline, style.argb, style.size
             );
@@ -81,6 +86,7 @@ public class TextBoxEditOps {
         caret.setCharIndex(insertIndex + 1);
         caret.clearSelection();
         mergeAdjacentSegments(box);
+        return true;
     }
 
     public void backspace(BookData.TextBoxNode box, TextBoxCaret caret) {
@@ -125,13 +131,13 @@ public class TextBoxEditOps {
             int segEnd = currentPos + seg.text.length();
 
             if (segEnd <= selStart || segStart >= selEnd) {
-                newSegments.add(seg.copy());
+                newSegments.add(BookDataUtils.copySegment(seg));
             } else {
                 int overlapStart = Math.max(segStart, selStart);
                 int overlapEnd = Math.min(segEnd, selEnd);
 
                 if (segStart < overlapStart) {
-                    BookData.TextSegment before = seg.copy();
+                    BookData.TextSegment before = BookDataUtils.copySegment(seg);
                     before.text = seg.text.substring(0, overlapStart - segStart);
                     newSegments.add(before);
                 }
@@ -148,7 +154,7 @@ public class TextBoxEditOps {
                 newSegments.add(styled);
 
                 if (segEnd > overlapEnd) {
-                    BookData.TextSegment after = seg.copy();
+                    BookData.TextSegment after = BookDataUtils.copySegment(seg);
                     after.text = seg.text.substring(overlapEnd - segStart);
                     newSegments.add(after);
                 }
@@ -199,7 +205,7 @@ public class TextBoxEditOps {
             BookData.TextSegment current = box.segments.get(i);
             BookData.TextSegment next = box.segments.get(i + 1);
 
-            if (current.sameStyle(next)) {
+            if (BookDataUtils.sameStyle(current, next)) {
                 current.text += next.text;
                 box.segments.remove(i + 1);
                 i--;

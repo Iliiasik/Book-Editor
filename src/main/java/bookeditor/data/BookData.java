@@ -3,7 +3,6 @@ package bookeditor.data;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.*;
-import net.minecraft.text.Text;
 import net.minecraft.util.Util;
 
 import java.util.ArrayList;
@@ -35,31 +34,11 @@ public class BookData {
         public int bgArgb = 0xFFF8F8F8;
 
         public NbtCompound toNbt() {
-            NbtCompound c = new NbtCompound();
-
-            NbtList list = new NbtList();
-            for (Node n : nodes) list.add(n.toNbt());
-            c.put("nodes", list);
-
-            NbtList strokesNbt = new NbtList();
-            for (Stroke s : strokes) strokesNbt.add(s.toNbt());
-            c.put("strokes", strokesNbt);
-
-            c.putInt("bg", bgArgb);
-            return c;
+            return BookDataModelAdapter.toModel(this).toNbt();
         }
 
         public static Page fromNbt(NbtCompound c) {
-            Page p = new Page();
-            NbtList list = c.getList("nodes", NbtElement.COMPOUND_TYPE);
-            for (int i = 0; i < list.size(); i++) p.nodes.add(Node.fromNbt(list.getCompound(i)));
-
-            if (c.contains("strokes", NbtElement.LIST_TYPE)) {
-                NbtList sList = c.getList("strokes", NbtElement.COMPOUND_TYPE);
-                for (int i = 0; i < sList.size(); i++) p.strokes.add(Stroke.fromNbt(sList.getCompound(i)));
-            }
-            if (c.contains("bg", NbtElement.INT_TYPE)) p.bgArgb = c.getInt("bg");
-            return p;
+            return BookDataModelAdapter.fromModel(bookeditor.data.model.PageModel.fromNbt(c));
         }
     }
 
@@ -68,11 +47,7 @@ public class BookData {
         public abstract NbtCompound toNbt();
 
         public static Node fromNbt(NbtCompound c) {
-            String t = c.getString("type");
-            if ("text".equals(t)) return TextNode.fromNbt(c);
-            if ("image".equals(t)) return ImageNode.fromNbt(c);
-            if ("textbox".equals(t)) return TextBoxNode.fromNbt(c);
-            return new TextNode("", false, false, false, 0xFF202020, 1.0f, ALIGN_LEFT);
+            return BookDataModelAdapter.fromModel(bookeditor.data.model.NodeModel.fromNbt(c));
         }
     }
 
@@ -97,28 +72,11 @@ public class BookData {
 
         @Override
         public NbtCompound toNbt() {
-            NbtCompound c = new NbtCompound();
-            c.putString("type", "text");
-            c.putString("text", text);
-            c.putBoolean("bold", bold);
-            c.putBoolean("italic", italic);
-            c.putBoolean("underline", underline);
-            c.putInt("argb", argb);
-            c.putFloat("size", size);
-            c.putInt("align", align);
-            return c;
+            return BookDataModelAdapter.toModel(this).toNbt();
         }
 
         public static TextNode fromNbt(NbtCompound c) {
-            return new TextNode(
-                    c.getString("text"),
-                    c.getBoolean("bold"),
-                    c.getBoolean("italic"),
-                    c.getBoolean("underline"),
-                    c.contains("argb", NbtElement.INT_TYPE) ? c.getInt("argb") : 0xFF202020,
-                    c.contains("size", NbtElement.FLOAT_TYPE) ? c.getFloat("size") : 1.0f,
-                    c.contains("align", NbtElement.INT_TYPE) ? clampAlign(c.getInt("align")) : ALIGN_LEFT
-            );
+            return (TextNode) BookDataModelAdapter.fromModel(bookeditor.data.model.NodeModel.fromNbt(c));
         }
 
         public TextNode copy() {
@@ -126,6 +84,7 @@ public class BookData {
         }
 
         public boolean sameStyle(TextNode other) {
+            if (other == null) return false;
             return this.bold == other.bold &&
                     this.italic == other.italic &&
                     this.underline == other.underline &&
@@ -154,39 +113,11 @@ public class BookData {
 
         @Override
         public NbtCompound toNbt() {
-            NbtCompound c = new NbtCompound();
-            c.putString("type", "textbox");
-            c.putInt("x", x);
-            c.putInt("y", y);
-            c.putInt("w", width);
-            c.putInt("h", height);
-            c.putInt("bgArgb", bgArgb);
-
-            NbtList segList = new NbtList();
-            for (TextSegment seg : segments) segList.add(seg.toNbt());
-            c.put("segments", segList);
-
-            return c;
+            return BookDataModelAdapter.toModel(this).toNbt();
         }
 
         public static TextBoxNode fromNbt(NbtCompound c) {
-            TextBoxNode box = new TextBoxNode(
-                    c.getInt("x"),
-                    c.getInt("y"),
-                    c.getInt("w"),
-                    c.getInt("h")
-            );
-
-            box.bgArgb = c.contains("bgArgb", NbtElement.INT_TYPE) ? c.getInt("bgArgb") : 0x00FFFFFF;
-
-            if (c.contains("segments", NbtElement.LIST_TYPE)) {
-                NbtList segList = c.getList("segments", NbtElement.COMPOUND_TYPE);
-                for (int i = 0; i < segList.size(); i++) {
-                    box.segments.add(TextSegment.fromNbt(segList.getCompound(i)));
-                }
-            }
-
-            return box;
+            return (TextBoxNode) BookDataModelAdapter.fromModel(bookeditor.data.model.NodeModel.fromNbt(c));
         }
 
         public String getFullText() {
@@ -224,28 +155,11 @@ public class BookData {
         }
 
         public NbtCompound toNbt() {
-            NbtCompound c = new NbtCompound();
-            c.putString("text", text);
-            c.putBoolean("bold", bold);
-            c.putBoolean("italic", italic);
-            c.putBoolean("underline", underline);
-            c.putInt("argb", argb);
-            c.putFloat("size", size);
-            c.putInt("align", align);
-            return c;
+            return BookDataModelAdapter.toModel(this).toNbt();
         }
 
         public static TextSegment fromNbt(NbtCompound c) {
-            TextSegment seg = new TextSegment(
-                    c.getString("text"),
-                    c.getBoolean("bold"),
-                    c.getBoolean("italic"),
-                    c.getBoolean("underline"),
-                    c.getInt("argb"),
-                    c.getFloat("size")
-            );
-            seg.align = c.contains("align", NbtElement.INT_TYPE) ? clampAlign(c.getInt("align")) : ALIGN_LEFT;
-            return seg;
+            return BookDataModelAdapter.fromModel(bookeditor.data.model.TextSegmentModel.fromNbt(c));
         }
 
         public TextSegment copy() {
@@ -255,6 +169,7 @@ public class BookData {
         }
 
         public boolean sameStyle(TextSegment other) {
+            if (other == null) return false;
             return this.bold == other.bold &&
                     this.italic == other.italic &&
                     this.underline == other.underline &&
@@ -286,26 +201,11 @@ public class BookData {
 
         @Override
         public NbtCompound toNbt() {
-            NbtCompound c = new NbtCompound();
-            c.putString("type", "image");
-            c.putString("url", url == null ? "" : url);
-            c.putInt("w", w);
-            c.putInt("h", h);
-            c.putBoolean("gif", gif);
-            c.putInt("align", align);
-            c.putBoolean("abs", absolute);
-            c.putInt("x", x);
-            c.putInt("y", y);
-            return c;
+            return BookDataModelAdapter.toModel(this).toNbt();
         }
 
         public static ImageNode fromNbt(NbtCompound c) {
-            ImageNode img = new ImageNode(c.getString("url"), c.getInt("w"), c.getInt("h"), c.getBoolean("gif"));
-            img.align = c.contains("align", NbtElement.INT_TYPE) ? clampAlign(c.getInt("align")) : ALIGN_LEFT;
-            img.absolute = c.contains("abs", NbtElement.BYTE_TYPE) ? c.getBoolean("abs") : true;
-            img.x = c.contains("x", NbtElement.INT_TYPE) ? c.getInt("x") : 0;
-            img.y = c.contains("y", NbtElement.INT_TYPE) ? c.getInt("y") : 0;
-            return img;
+            return (ImageNode) BookDataModelAdapter.fromModel(bookeditor.data.model.NodeModel.fromNbt(c));
         }
     }
 
@@ -316,89 +216,26 @@ public class BookData {
         public static class Point { public int x,y; public Point(int x, int y){ this.x=x; this.y=y; } }
 
         public NbtCompound toNbt() {
-            NbtCompound c = new NbtCompound();
-            c.putInt("color", color);
-            c.putInt("thickness", thickness);
-            NbtList pts = new NbtList();
-            for (Point p : points) {
-                NbtCompound pc = new NbtCompound();
-                pc.putInt("x", p.x);
-                pc.putInt("y", p.y);
-                pts.add(pc);
-            }
-            c.put("points", pts);
-            return c;
+            return BookDataModelAdapter.toModel(this).toNbt();
         }
         public static Stroke fromNbt(NbtCompound c) {
-            Stroke s = new Stroke();
-            if (c.contains("color", NbtElement.INT_TYPE)) s.color = c.getInt("color");
-            if (c.contains("thickness", NbtElement.INT_TYPE)) s.thickness = c.getInt("thickness");
-            NbtList pts = c.getList("points", NbtElement.COMPOUND_TYPE);
-            for (int i = 0; i < pts.size(); i++) {
-                NbtCompound pc = pts.getCompound(i);
-                s.points.add(new Point(pc.getInt("x"), pc.getInt("y")));
-            }
-            return s;
+            return (Stroke) BookDataModelAdapter.fromModel(bookeditor.data.model.StrokeModel.fromNbt(c));
         }
-    }
-
-    private static int clampAlign(int a) {
-        if (a < 0) return ALIGN_LEFT;
-        if (a > 2) return ALIGN_RIGHT;
-        return a;
     }
 
     public static void ensureDefaults(ItemStack stack, PlayerEntity player) {
-        NbtCompound root = stack.getOrCreateNbt();
-        if (!root.contains(ROOT, NbtElement.COMPOUND_TYPE)) {
-            BookData data = new BookData();
-            data.title = Text.translatable("bookeditor.default_title").getString();
-            data.authorName = player.getGameProfile().getName();
-            data.authorUuid = player.getUuid();
-            data.signed = false;
-            Page p = new Page();
-            p.bgArgb = 0xFFF8F8F8;
-            TextBoxNode box = new TextBoxNode(20, 20, 400, 100);
-            box.setText(Text.translatable("bookeditor.default_page").getString(), false, false, false, 0xFF202020, 1.0f);
-            p.nodes.add(box);
-            data.pages.add(p);
-            writeTo(stack, data);
-        }
+        BookDataSerializer.ensureDefaults(stack, player);
     }
 
     public static BookData readFrom(ItemStack stack) {
-        BookData d = new BookData();
-        NbtCompound root = stack.getOrCreateNbt();
-        if (!root.contains(ROOT, NbtElement.COMPOUND_TYPE)) return d;
-        NbtCompound cb = root.getCompound(ROOT);
-        d.title = cb.getString(TITLE);
-        d.authorName = cb.getString(AUTHOR_NAME);
-        if (cb.contains(AUTHOR_UUID, NbtElement.STRING_TYPE)) {
-            try { d.authorUuid = UUID.fromString(cb.getString(AUTHOR_UUID)); } catch (Exception ignored) {}
-        }
-        d.signed = cb.getBoolean(SIGNED);
-        NbtList pages = cb.getList(PAGES, NbtElement.COMPOUND_TYPE);
-        for (int i = 0; i < pages.size(); i++) d.pages.add(Page.fromNbt(pages.getCompound(i)));
-        return d;
+        return BookDataSerializer.readFrom(stack);
     }
 
     public static void writeTo(ItemStack stack, BookData data) {
-        NbtCompound root = stack.getOrCreateNbt();
-        root.put(ROOT, toNbt(data));
-        stack.setNbt(root);
+        BookDataSerializer.writeTo(stack, data);
     }
 
     public static NbtCompound toNbt(BookData d) {
-        NbtCompound cb = new NbtCompound();
-        cb.putString(TITLE, d.title);
-        cb.putString(AUTHOR_NAME, d.authorName == null ? "" : d.authorName);
-        if (d.authorUuid != null) cb.putString(AUTHOR_UUID, d.authorUuid.toString());
-        cb.putBoolean(SIGNED, d.signed);
-
-        NbtList pages = new NbtList();
-        for (Page p : d.pages) pages.add(p.toNbt());
-        cb.put(PAGES, pages);
-
-        return cb;
+        return BookDataSerializer.toNbt(d);
     }
 }

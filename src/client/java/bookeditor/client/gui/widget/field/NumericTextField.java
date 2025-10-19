@@ -1,4 +1,4 @@
-package bookeditor.client.gui.widget;
+package bookeditor.client.gui.widget.field;
 
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.widget.TextFieldWidget;

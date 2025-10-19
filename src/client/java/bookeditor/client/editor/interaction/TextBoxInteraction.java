@@ -1,4 +1,4 @@
-package bookeditor.client.editor.textbox;
+package bookeditor.client.editor.interaction;
 
 import bookeditor.data.BookData;
 import net.minecraft.client.gui.DrawContext;

@@ -1,8 +1,8 @@
 package bookeditor.client.gui.screen;
 
-import bookeditor.client.gui.widget.CustomButton;
-import bookeditor.client.gui.widget.CustomTextField;
-import bookeditor.client.gui.widget.NumericTextField;
+import bookeditor.client.gui.widget.button.CustomButton;
+import bookeditor.client.gui.widget.field.CustomTextField;
+import bookeditor.client.gui.widget.field.NumericTextField;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;

@@ -1,5 +1,6 @@
-package bookeditor.client.editor.textbox;
+package bookeditor.client.editor.render;
 
+import bookeditor.client.editor.textbox.TextBoxCaret;
 import bookeditor.data.BookData;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;

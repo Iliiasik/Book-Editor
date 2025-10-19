@@ -4,12 +4,16 @@ import bookeditor.client.gui.base.WidgetHost;
 import bookeditor.client.gui.components.AdaptiveToolbar;
 import bookeditor.client.gui.components.BookNavigator;
 import bookeditor.client.gui.render.AuthorBadgeRenderer;
-import bookeditor.client.gui.widget.ColorPickerDropdown;
-import bookeditor.client.gui.widget.CustomTextField;
-import bookeditor.client.gui.widget.RichTextEditorWidget;
+import bookeditor.client.gui.render.LimitBadgeRenderer;
+import bookeditor.client.gui.widget.button.ColorPickerDropdown;
+import bookeditor.client.gui.widget.field.CustomTextField;
+import bookeditor.client.gui.widget.editor.EditorWidget;
 import bookeditor.client.net.BookSyncService;
 import bookeditor.client.util.ImageCache;
 import bookeditor.data.BookData;
+import bookeditor.data.NbtSizeUtils;
+import bookeditor.client.gui.util.UiUtils;
+import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
@@ -17,6 +21,8 @@ import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.network.PacketByteBuf;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import org.lwjgl.glfw.GLFW;
@@ -28,18 +34,21 @@ public class BookScreen extends Screen implements WidgetHost {
     private static final int BTN_H = 18;
 
     private final Hand hand;
-    private final net.minecraft.item.ItemStack stack;
-    private BookData data;
+    private final BookData data;
 
     private int bookPage = 0;
     private CustomTextField titleField;
-    private RichTextEditorWidget editor;
+    private EditorWidget editor;
     private BookNavigator bookNavigator;
     private AdaptiveToolbar toolbar;
 
+    private boolean nbtTooLarge = false;
+    private long currentNbtSize = 0L;
+    private long nbtMax = NbtSizeUtils.getAllowedMax();
+    private boolean debugNbtOverlay = false;
+
     public BookScreen(net.minecraft.item.ItemStack stack, Hand hand) {
         super(Text.translatable("screen.bookeditor.title"));
-        this.stack = stack;
         this.hand = hand;
         this.data = BookData.readFrom(stack);
         if (this.data.pages.isEmpty()) {
@@ -69,26 +78,24 @@ public class BookScreen extends Screen implements WidgetHost {
                 y,
                 BTN_H,
                 () -> bookPage,
-                () -> data.pages.size(),
+                data.pages::size,
                 this::setPage
         );
         bookNavigator.build();
 
         y += BTN_H + GAP;
 
-        int toolbarX = MARGIN;
         int toolbarY = y;
         int toolbarWidth = this.width - MARGIN * 2;
 
         y += BTN_H + GAP;
 
-        int editorX = MARGIN;
         int editorY = y;
         int editorWidth = this.width - MARGIN * 2;
         int editorHeight = Math.max(160, this.height - editorY - MARGIN);
 
-        editor = new RichTextEditorWidget(
-                textRenderer, editorX, editorY, editorWidth, editorHeight,
+        editor = new EditorWidget(
+                textRenderer, MARGIN, editorY, editorWidth, editorHeight,
                 !data.signed, ImageCache::requestTexture, this::onDirty
         );
         addDrawableChild(editor);
@@ -101,21 +108,48 @@ public class BookScreen extends Screen implements WidgetHost {
                 this::createNewPage,
                 this::deleteCurrentPage,
                 this::signBook,
-                toolbarX, toolbarY, BTN_H, GAP, toolbarWidth
+                MARGIN, toolbarY, BTN_H, GAP, toolbarWidth
         );
         toolbar.build();
 
         editor.setContent(data.pages.get(bookPage));
 
         updateUI();
+        updateNbtFlags();
+    }
+
+    private void updateNbtFlags() {
+        NbtCompound nbt = BookData.toNbt(this.data);
+        int size = NbtSizeUtils.measureNbtInPacket(this.hand, nbt);
+        if (size < 0) {
+            size = NbtSizeUtils.getNbtByteSize(nbt);
+            if (size < 0) {
+                PacketByteBuf tmp = PacketByteBufs.create();
+                tmp.writeNbt(nbt);
+                size = tmp.readableBytes();
+            }
+        }
+        this.currentNbtSize = size;
+        this.nbtMax = NbtSizeUtils.getAllowedMax();
+        if (size > this.nbtMax) {
+            setNbtTooLarge(true);
+        } else {
+            if (this.nbtTooLarge) setNbtTooLarge(false);
+        }
     }
 
     private void updateUI() {
         if (bookNavigator != null) bookNavigator.updateState();
-        if (toolbar != null) toolbar.setVisible(!data.signed);
-        if (editor != null) editor.setEditable(!data.signed);
-        if (titleField != null) titleField.visible = !data.signed;
+        boolean editable = !data.signed && !nbtTooLarge;
+        if (toolbar != null) toolbar.setVisible(editable);
+        if (editor != null) editor.setEditable(editable);
+        if (titleField != null) titleField.visible = editable;
         prefetchPageImages();
+    }
+
+    public void setNbtTooLarge(boolean v) {
+        this.nbtTooLarge = v;
+        updateUI();
     }
 
     private void setPage(int page) {
@@ -185,10 +219,22 @@ public class BookScreen extends Screen implements WidgetHost {
     }
 
     private void onDirty() {
+        updateNbtFlags();
+        if (nbtTooLarge) {
+            return;
+        }
+
         if (!data.signed && titleField != null) {
             data.title = titleField.getText();
         }
-        BookSyncService.sendUpdate(hand, data);
+        try {
+            BookSyncService.sendUpdate(hand, data);
+        } catch (Exception ex) {
+            if (editor != null) editor.showTransientMessage(Text.translatable("screen.bookeditor.failed_save").getString(), 5000);
+            if (ex.getMessage() != null && ex.getMessage().contains("too large")) {
+                setNbtTooLarge(true);
+            }
+        }
     }
 
     @Override
@@ -198,6 +244,17 @@ public class BookScreen extends Screen implements WidgetHost {
 
         if (data.signed) {
             AuthorBadgeRenderer.renderBadge(ctx, textRenderer, this.width, MARGIN + 10, BTN_H, data);
+        }
+
+        LimitBadgeRenderer.renderLimit(ctx, textRenderer, this.width, MARGIN + 10, BTN_H, data, nbtTooLarge);
+
+        if (debugNbtOverlay) {
+            String cur = UiUtils.humanReadableBytes(currentNbtSize);
+            String max = UiUtils.humanReadableBytes(nbtMax);
+            double frac = nbtMax > 0 ? (currentNbtSize / (double) nbtMax) : 0.0;
+            int pct = (int)Math.round(frac * 100.0);
+            String s = String.format("NBT: %s / %s (%d%%) - clientMax=%d, serverConst=%d", cur, max, pct, nbtMax, PacketByteBuf.MAX_READ_NBT_SIZE);
+            ctx.drawTextWithShadow(textRenderer, Text.literal(s), 8, 8, 0xFFFFFF00);
         }
 
         if (bookNavigator != null) {
@@ -241,6 +298,13 @@ public class BookScreen extends Screen implements WidgetHost {
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (!data.signed && hasControlDown()) {
+            if (keyCode == GLFW.GLFW_KEY_N) {
+                boolean shift = (modifiers & GLFW.GLFW_MOD_SHIFT) != 0;
+                if (shift) {
+                    this.debugNbtOverlay = !this.debugNbtOverlay;
+                    return true;
+                }
+            }
             if (keyCode == GLFW.GLFW_KEY_B) {
                 editor.setBold(!editor.isBold());
                 editor.applyStyleToSelection();
