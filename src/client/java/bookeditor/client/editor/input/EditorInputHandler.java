@@ -3,7 +3,6 @@ package bookeditor.client.editor.input;
 import bookeditor.client.editor.mode.EditorMode;
 import bookeditor.client.editor.textbox.StyleParams;
 import bookeditor.client.editor.textbox.TextBoxCaret;
-import bookeditor.client.editor.textbox.TextBoxEditOps;
 import bookeditor.client.editor.interaction.TextBoxInteraction;
 import bookeditor.client.gui.widget.editor.EditorState;
 import bookeditor.data.BookData;
@@ -51,44 +50,58 @@ public class EditorInputHandler {
 
         boolean ctrl = hasControlDown();
 
+        if (handleCtrlCommands(ctrl, keyCode, box, textBoxCaret)) return true;
+        if (handleEditCommands(keyCode, box, textBoxCaret)) return true;
+        return handleArrowKeys(keyCode, modifiers, box, textBoxCaret);
+    }
+
+    private boolean handleCtrlCommands(boolean ctrl, int keyCode, BookData.TextBoxNode box, TextBoxCaret caret) {
         if (ctrl && keyCode == GLFW.GLFW_KEY_A) {
-            textBoxCaret.selectAll(box);
+            caret.selectAll(box);
             return true;
         }
+        return false;
+    }
 
+    private boolean handleEditCommands(int keyCode, BookData.TextBoxNode box, TextBoxCaret caret) {
         if (keyCode == GLFW.GLFW_KEY_BACKSPACE) {
-            state.textBoxOps.backspace(box, textBoxCaret);
+            state.textBoxOps.backspace(box, caret);
             return true;
         } else if (keyCode == GLFW.GLFW_KEY_DELETE) {
-            state.textBoxOps.deleteForward(box, textBoxCaret);
+            state.textBoxOps.deleteForward(box, caret);
             return true;
         } else if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
-            boolean ok = state.textBoxOps.insertChar(box, textBoxCaret, new StyleParams(false, false, false, 0xFF202020, 1.0f), '\n');
+            boolean ok = state.textBoxOps.insertChar(box, caret, new StyleParams(false, false, false, 0xFF202020, 1.0f), '\n');
             if (!ok) {
                 state.showTransientMessage("Content limit reached", 3000);
                 return false;
             }
             return true;
-        } else if (keyCode == GLFW.GLFW_KEY_LEFT) {
+        }
+        return false;
+    }
+
+    private boolean handleArrowKeys(int keyCode, int modifiers, BookData.TextBoxNode box, TextBoxCaret caret) {
+        if (keyCode == GLFW.GLFW_KEY_LEFT) {
             if ((modifiers & GLFW.GLFW_MOD_SHIFT) != 0) {
-                if (!textBoxCaret.hasSelection()) {
-                    textBoxCaret.setAnchor(textBoxCaret.getCharIndex());
+                if (!caret.hasSelection()) {
+                    caret.setAnchor(caret.getCharIndex());
                 }
-                textBoxCaret.moveLeft(box);
+                caret.moveLeft(box);
             } else {
-                textBoxCaret.moveLeft(box);
-                textBoxCaret.clearSelection();
+                caret.moveLeft(box);
+                caret.clearSelection();
             }
             return true;
         } else if (keyCode == GLFW.GLFW_KEY_RIGHT) {
             if ((modifiers & GLFW.GLFW_MOD_SHIFT) != 0) {
-                if (!textBoxCaret.hasSelection()) {
-                    textBoxCaret.setAnchor(textBoxCaret.getCharIndex());
+                if (!caret.hasSelection()) {
+                    caret.setAnchor(caret.getCharIndex());
                 }
-                textBoxCaret.moveRight(box);
+                caret.moveRight(box);
             } else {
-                textBoxCaret.moveRight(box);
-                textBoxCaret.clearSelection();
+                caret.moveRight(box);
+                caret.clearSelection();
             }
             return true;
         }
