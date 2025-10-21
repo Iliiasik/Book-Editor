@@ -44,41 +44,135 @@ public class EditorWidget extends ClickableWidget {
     public void setHeight(int height) {
         state.setHeight(height);
     }
-    public void setEditable(boolean editable) { state.setEditable(editable); }
-    public void setContent(BookData.Page page) { state.setContent(page); historyManager.onContentSet(); }
-    public void markSnapshot() { historyManager.pushSnapshot(); }
-    public boolean undo() { return historyManager.undo(); }
-    public boolean redo() { return historyManager.redo(); }
-    public void deactivateAllTools() { toolManager.deactivateAllTools(); }
-    public void setBold(boolean bold) { styleManager.setBold(bold); }
-    public void setItalic(boolean italic) { styleManager.setItalic(italic); }
-    public void setUnderline(boolean underline) { styleManager.setUnderline(underline); }
-    public void setColor(int argb) { styleManager.setColor(argb); }
-    public void setSize(float size) { styleManager.setSize(size); }
-    public void setTextBoxBgColor(int argb) { styleManager.setTextBoxBgColor(argb); }
-    public void setDrawingToolColor(int argb) { toolManager.setDrawingToolColor(argb); }
-    public void setDrawingTool(DrawingTool tool) { toolManager.setDrawingTool(tool); }
-    public DrawingTool getCurrentDrawingTool() { return toolManager.getCurrentDrawingTool(); }
-    public void setToolSize(int size) { toolManager.setToolSize(size); }
-    public void activateTextBoxTool() { toolManager.activateTextBoxTool(); }
-    public void setAlignment(int align) { styleManager.setAlignment(align); }
-    public void insertImage(String url, int w, int h, boolean gif) { toolManager.insertImage(url, w, h, gif); }
-    public void applyStyleToSelection() { styleManager.applyStyleToSelection(); }
-    public void copySelection() { styleManager.copySelection(); }
-    public void cutSelection() { styleManager.cutSelection(); }
-    public void paste() { styleManager.paste(); }
-    public void selectAll() { styleManager.selectAll(); }
-    public void syncStylesFromSelection() { styleManager.syncStylesFromSelection(); }
-    public int getColor() { return styleManager.getColor(); }
-    public boolean isBold() { return styleManager.isBold(); }
-    public boolean isItalic() { return styleManager.isItalic(); }
-    public boolean isUnderline() { return styleManager.isUnderline(); }
-    public float getSize() { return styleManager.getSize(); }
-    public void showTransientMessage(String msg, long durationMillis) { state.showTransientMessage(msg, durationMillis); }
 
-    public boolean isEditable() { return state.editable; }
-    public int getPageNodeCount() { return state.page == null ? 0 : state.page.nodes.size(); }
-    public int getPageStrokeCount() { return state.page == null ? 0 : state.page.strokes.size(); }
+    public void setEditable(boolean editable) {
+        state.setEditable(editable);
+    }
+
+    public void setContent(BookData.Page page) {
+        state.setContent(page);
+        historyManager.onContentSet();
+    }
+
+    public void markSnapshot() {
+        historyManager.pushSnapshot();
+    }
+
+    public boolean undo() {
+        return historyManager.undo();
+    }
+
+    public boolean redo() {
+        return historyManager.redo();
+    }
+
+    public void deactivateAllTools() {
+        toolManager.deactivateAllTools();
+    }
+
+    public void setBold(boolean bold) {
+        styleManager.setBold(bold);
+    }
+
+    public void setItalic(boolean italic) {
+        styleManager.setItalic(italic);
+    }
+
+    public void setUnderline(boolean underline) {
+        styleManager.setUnderline(underline);
+    }
+
+    public void setColor(int argb) {
+        styleManager.setColor(argb);
+    }
+
+    public void setSize(float size) {
+        styleManager.setSize(size);
+    }
+
+    public void setTextBoxBgColor(int argb) {
+        styleManager.setTextBoxBgColor(argb);
+    }
+
+    public void setDrawingToolColor(int argb) {
+        toolManager.setDrawingToolColor(argb);
+    }
+
+    public void setDrawingTool(DrawingTool tool) {
+        toolManager.setDrawingTool(tool);
+    }
+
+    public DrawingTool getCurrentDrawingTool() {
+        return toolManager.getCurrentDrawingTool();
+    }
+
+    public void setToolSize(int size) {
+        toolManager.setToolSize(size);
+    }
+
+    public void activateTextBoxTool() {
+        toolManager.activateTextBoxTool();
+    }
+
+    public void setAlignment(int align) {
+        styleManager.setAlignment(align);
+    }
+
+    public void insertImage(String url, int w, int h, boolean gif) {
+        toolManager.insertImage(url, w, h, gif);
+    }
+
+    public void applyStyleToSelection() {
+        styleManager.applyStyleToSelection();
+    }
+
+    public void copySelection() {
+        styleManager.copySelection();
+    }
+
+    public void cutSelection() {
+        styleManager.cutSelection();
+    }
+
+    public void paste() {
+        styleManager.paste();
+    }
+
+    public void selectAll() {
+        styleManager.selectAll();
+    }
+
+    public void syncStylesFromSelection() {
+        styleManager.syncStylesFromSelection();
+    }
+
+    public int getColor() {
+        return styleManager.getColor();
+    }
+
+    public boolean isBold() {
+        return styleManager.isBold();
+    }
+
+    public boolean isItalic() {
+        return styleManager.isItalic();
+    }
+
+    public boolean isUnderline() {
+        return styleManager.isUnderline();
+    }
+
+    public float getSize() {
+        return styleManager.getSize();
+    }
+
+    public void showTransientMessage(String msg, long durationMillis) {
+        state.showTransientMessage(msg, durationMillis);
+    }
+
+    public boolean isEditable() {
+        return state.editable;
+    }
 
     @Override
     protected void renderButton(DrawContext ctx, int mouseX, int mouseY, float delta) {
@@ -89,28 +183,53 @@ public class EditorWidget extends ClickableWidget {
     public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
         return toolManager.mouseScrolled(mouseX, mouseY, amount);
     }
+
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         return toolManager.mouseClicked(mouseX, mouseY, button);
     }
+
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dx, double dy) {
         return toolManager.mouseDragged(mouseX, mouseY, button, dx, dy);
     }
+
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         return toolManager.mouseReleased(mouseX, mouseY, button);
     }
+
     @Override
     public boolean charTyped(char chr, int modifiers) {
         return toolManager.charTyped(chr, modifiers);
     }
+
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         return toolManager.keyPressed(keyCode, scanCode, modifiers);
     }
-    @Override
-    protected void appendClickableNarrations(NarrationMessageBuilder builder) {}
 
-    public boolean isTextBoxToolActive() { return state.textBoxCreationTool.isActive(); }
+    @Override
+    protected void appendClickableNarrations(NarrationMessageBuilder builder) {
+    }
+
+    public boolean isTextBoxToolActive() {
+        return state.textBoxCreationTool.isActive();
+    }
+
+    public int getPageNodeCount() {
+        if (state.page == null) {
+            return 0;
+        }
+        return state.page.nodes.size();
+    }
+
+    public int getPageStrokeCount() {
+        if (state.page == null) {
+            return 0;
+        }
+        return state.page.strokes.size();
+    }
+
 }
+

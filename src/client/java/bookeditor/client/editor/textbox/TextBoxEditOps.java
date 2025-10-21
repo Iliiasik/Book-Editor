@@ -24,6 +24,8 @@ public class TextBoxEditOps {
         if (insertIndex < 0) insertIndex = 0;
         if (insertIndex > fullText.length()) insertIndex = fullText.length();
 
+        BookData.TextSegment styleSeg = segmentFromStyle(style);
+
         int currentPos = 0;
         for (int i = 0; i < box.segments.size(); i++) {
             BookData.TextSegment seg = box.segments.get(i);
@@ -32,39 +34,7 @@ public class TextBoxEditOps {
             if (insertIndex <= currentPos + segLen) {
                 int localIndex = insertIndex - currentPos;
 
-                if (localIndex == 0 && i > 0 && BookDataUtils.sameStyle(box.segments.get(i - 1), segmentFromStyle(style))) {
-                    box.segments.get(i - 1).text += ch;
-                } else if (localIndex == segLen && BookDataUtils.sameStyle(seg, segmentFromStyle(style))) {
-                    seg.text = seg.text + ch;
-                } else if (BookDataUtils.sameStyle(seg, segmentFromStyle(style))) {
-                    seg.text = seg.text.substring(0, localIndex) + ch + seg.text.substring(localIndex);
-                } else {
-                    String before = seg.text.substring(0, localIndex);
-                    String after = seg.text.substring(localIndex);
-
-                    List<BookData.TextSegment> newSegs = new ArrayList<>();
-                    if (!before.isEmpty()) {
-                        BookData.TextSegment beforeSeg = BookDataUtils.copySegment(seg);
-                        beforeSeg.text = before;
-                        newSegs.add(beforeSeg);
-                    }
-
-                    BookData.TextSegment newSeg = new BookData.TextSegment(
-                            String.valueOf(ch), style.bold, style.italic, style.underline, style.argb, style.size
-                    );
-                    newSeg.align = seg.align;
-                    newSegs.add(newSeg);
-
-                    if (!after.isEmpty()) {
-                        BookData.TextSegment afterSeg = BookDataUtils.copySegment(seg);
-                        afterSeg.text = after;
-                        newSegs.add(afterSeg);
-                    }
-
-                    box.segments.remove(i);
-                    box.segments.addAll(i, newSegs);
-                }
-
+                insertIntoSegment(box, i, seg, localIndex, styleSeg, style, ch);
                 caret.setCharIndex(insertIndex + 1);
                 caret.clearSelection();
                 mergeAdjacentSegments(box);
@@ -73,20 +43,59 @@ public class TextBoxEditOps {
             currentPos += segLen;
         }
 
-        if (box.segments.isEmpty() || !BookDataUtils.sameStyle(box.segments.get(box.segments.size() - 1), segmentFromStyle(style))) {
-            BookData.TextSegment newSeg = new BookData.TextSegment(
-                    String.valueOf(ch), style.bold, style.italic, style.underline, style.argb, style.size
-            );
-            newSeg.align = BookData.ALIGN_LEFT;
-            box.segments.add(newSeg);
-        } else {
-            box.segments.get(box.segments.size() - 1).text += ch;
-        }
+        appendCharToEnd(box, styleSeg, style, ch);
 
         caret.setCharIndex(insertIndex + 1);
         caret.clearSelection();
         mergeAdjacentSegments(box);
         return true;
+    }
+
+    private void insertIntoSegment(BookData.TextBoxNode box, int index, BookData.TextSegment seg, int localIndex, BookData.TextSegment styleSeg, StyleParams style, char ch) {
+        if (localIndex == 0 && index > 0 && BookDataUtils.sameStyle(box.segments.get(index - 1), styleSeg)) {
+            box.segments.get(index - 1).text += ch;
+        } else if (localIndex == seg.text.length() && BookDataUtils.sameStyle(seg, styleSeg)) {
+            seg.text = seg.text + ch;
+        } else if (BookDataUtils.sameStyle(seg, styleSeg)) {
+            seg.text = seg.text.substring(0, localIndex) + ch + seg.text.substring(localIndex);
+        } else {
+            String before = seg.text.substring(0, localIndex);
+            String after = seg.text.substring(localIndex);
+
+            List<BookData.TextSegment> newSegs = new ArrayList<>();
+            if (!before.isEmpty()) {
+                BookData.TextSegment beforeSeg = BookDataUtils.copySegment(seg);
+                beforeSeg.text = before;
+                newSegs.add(beforeSeg);
+            }
+
+            BookData.TextSegment newSeg = createSegFromStyle(style, ch);
+            newSeg.align = seg.align;
+            newSegs.add(newSeg);
+
+            if (!after.isEmpty()) {
+                BookData.TextSegment afterSeg = BookDataUtils.copySegment(seg);
+                afterSeg.text = after;
+                newSegs.add(afterSeg);
+            }
+
+            box.segments.remove(index);
+            box.segments.addAll(index, newSegs);
+        }
+    }
+
+    private void appendCharToEnd(BookData.TextBoxNode box, BookData.TextSegment styleSeg, StyleParams style, char ch) {
+        if (box.segments.isEmpty() || !BookDataUtils.sameStyle(box.segments.get(box.segments.size() - 1), styleSeg)) {
+            BookData.TextSegment newSeg = createSegFromStyle(style, ch);
+            newSeg.align = BookData.ALIGN_LEFT;
+            box.segments.add(newSeg);
+        } else {
+            box.segments.get(box.segments.size() - 1).text += ch;
+        }
+    }
+
+    private BookData.TextSegment createSegFromStyle(StyleParams style, char ch) {
+        return new BookData.TextSegment(String.valueOf(ch), style.bold, style.italic, style.underline, style.argb, style.size);
     }
 
     public void backspace(BookData.TextBoxNode box, TextBoxCaret caret) {

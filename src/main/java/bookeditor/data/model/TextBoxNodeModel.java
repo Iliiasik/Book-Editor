@@ -27,7 +27,10 @@ public class TextBoxNodeModel extends NodeModel {
         this.height = height;
     }
 
-    @Override public String type() { return "textbox"; }
+    @Override
+    public String type() {
+        return "textbox";
+    }
 
     @Override
     public NbtCompound toNbt() {
@@ -41,7 +44,9 @@ public class TextBoxNodeModel extends NodeModel {
         NbtList segList = new NbtList();
         int added = 0;
         for (TextSegmentModel seg : segments) {
-            if (added >= BookDataUtils.MAX_SEGMENTS_PER_TEXTBOX) break;
+            if (added >= BookDataUtils.MAX_SEGMENTS_PER_TEXTBOX) {
+                break;
+            }
             try {
                 segList.add(seg.toNbt());
             } catch (RuntimeException ex) {

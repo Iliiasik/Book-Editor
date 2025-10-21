@@ -43,17 +43,15 @@ public class BookData {
     }
 
     public static abstract class Node {
-        public abstract String type();
         public abstract NbtCompound toNbt();
 
-        public static Node fromNbt(NbtCompound c) {
-            return BookDataModelAdapter.fromModel(bookeditor.data.model.NodeModel.fromNbt(c));
-        }
     }
 
     public static class TextNode extends Node {
         public String text;
-        public boolean bold, italic, underline;
+        public boolean bold;
+        public boolean italic;
+        public boolean underline;
         public int argb;
         public float size;
         public int align;
@@ -68,30 +66,11 @@ public class BookData {
             this.align = align;
         }
 
-        @Override public String type() { return "text"; }
-
         @Override
         public NbtCompound toNbt() {
             return BookDataModelAdapter.toModel(this).toNbt();
         }
 
-        public static TextNode fromNbt(NbtCompound c) {
-            return (TextNode) BookDataModelAdapter.fromModel(bookeditor.data.model.NodeModel.fromNbt(c));
-        }
-
-        public TextNode copy() {
-            return new TextNode(text, bold, italic, underline, argb, size, align);
-        }
-
-        public boolean sameStyle(TextNode other) {
-            if (other == null) return false;
-            return this.bold == other.bold &&
-                    this.italic == other.italic &&
-                    this.underline == other.underline &&
-                    this.argb == other.argb &&
-                    Float.compare(this.size, other.size) == 0 &&
-                    this.align == other.align;
-        }
     }
 
     public static class TextBoxNode extends Node {
@@ -109,15 +88,9 @@ public class BookData {
             this.height = height;
         }
 
-        @Override public String type() { return "textbox"; }
-
         @Override
         public NbtCompound toNbt() {
             return BookDataModelAdapter.toModel(this).toNbt();
-        }
-
-        public static TextBoxNode fromNbt(NbtCompound c) {
-            return (TextBoxNode) BookDataModelAdapter.fromModel(bookeditor.data.model.NodeModel.fromNbt(c));
         }
 
         public String getFullText() {
@@ -158,25 +131,6 @@ public class BookData {
             return BookDataModelAdapter.toModel(this).toNbt();
         }
 
-        public static TextSegment fromNbt(NbtCompound c) {
-            return BookDataModelAdapter.fromModel(bookeditor.data.model.TextSegmentModel.fromNbt(c));
-        }
-
-        public TextSegment copy() {
-            TextSegment seg = new TextSegment(text, bold, italic, underline, argb, size);
-            seg.align = align;
-            return seg;
-        }
-
-        public boolean sameStyle(TextSegment other) {
-            if (other == null) return false;
-            return this.bold == other.bold &&
-                    this.italic == other.italic &&
-                    this.underline == other.underline &&
-                    this.argb == other.argb &&
-                    Float.compare(this.size, other.size) == 0 &&
-                    this.align == other.align;
-        }
     }
 
     public static class ImageNode extends Node {
@@ -197,29 +151,29 @@ public class BookData {
             this.gif = gif;
         }
 
-        @Override public String type() { return "image"; }
-
         @Override
         public NbtCompound toNbt() {
             return BookDataModelAdapter.toModel(this).toNbt();
         }
 
-        public static ImageNode fromNbt(NbtCompound c) {
-            return (ImageNode) BookDataModelAdapter.fromModel(bookeditor.data.model.NodeModel.fromNbt(c));
-        }
     }
 
     public static class Stroke {
         public int color = 0xFF000000;
         public int thickness = 2;
         public final List<Point> points = new ArrayList<>();
-        public static class Point { public int x,y; public Point(int x, int y){ this.x=x; this.y=y; } }
+        public static class Point {
+            public int x;
+            public int y;
+
+            public Point(int x, int y) {
+                this.x = x;
+                this.y = y;
+            }
+        }
 
         public NbtCompound toNbt() {
             return BookDataModelAdapter.toModel(this).toNbt();
-        }
-        public static Stroke fromNbt(NbtCompound c) {
-            return (Stroke) BookDataModelAdapter.fromModel(bookeditor.data.model.StrokeModel.fromNbt(c));
         }
     }
 
@@ -229,10 +183,6 @@ public class BookData {
 
     public static BookData readFrom(ItemStack stack) {
         return BookDataSerializer.readFrom(stack);
-    }
-
-    public static void writeTo(ItemStack stack, BookData data) {
-        BookDataSerializer.writeTo(stack, data);
     }
 
     public static NbtCompound toNbt(BookData d) {

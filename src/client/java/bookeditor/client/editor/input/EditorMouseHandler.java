@@ -19,34 +19,12 @@ public class EditorMouseHandler {
                                        int contentScreenLeft, int contentScreenTop, double scale, int scrollY,
                                        Runnable pushSnapshot) {
 
-        long currentTime = System.currentTimeMillis();
-        if (currentTime - lastClickTime < 500) {
-            clickCount++;
-        } else {
-            clickCount = 1;
-        }
-        lastClickTime = currentTime;
+        updateClickCount();
 
         if (currentMode == EditorMode.TEXT_MODE && textBoxInteraction.isEditingText()) {
-            int selectedIdx = textBoxInteraction.getSelectedTextBoxIndex();
-            if (selectedIdx >= 0 && selectedIdx < page.nodes.size()) {
-                var node = page.nodes.get(selectedIdx);
-                if (node instanceof BookData.TextBoxNode box) {
-                    int boxScreenX = contentScreenLeft + (int) Math.round(scale * box.x);
-                    int boxScreenY = contentScreenTop + (int) Math.round(scale * (box.y - scrollY));
-                    int boxScreenW = (int) Math.round(scale * box.width);
-                    int boxScreenH = (int) Math.round(scale * box.height);
-
-                    if (mx >= boxScreenX && mx <= boxScreenX + boxScreenW &&
-                            my >= boxScreenY && my <= boxScreenY + boxScreenH) {
-                        int localX = (int) Math.round((mx - boxScreenX) / scale);
-                        int localY = (int) Math.round((my - boxScreenY) / scale);
-                        int charIdx = textBoxRenderer.getCharIndexAtPosition(textRenderer, box, localX, localY);
-                        textBoxCaret.setCharIndex(charIdx);
-                        textBoxCaret.clearSelection();
-                        return currentMode;
-                    }
-                }
+            if (handleActiveTextClick(mx, my, page, textBoxInteraction, textBoxCaret, textBoxRenderer, textRenderer,
+                    contentScreenLeft, contentScreenTop, scale, scrollY)) {
+                return currentMode;
             }
             textBoxInteraction.setEditingText(false);
             textBoxCaret.clearSelection();
@@ -62,21 +40,63 @@ public class EditorMouseHandler {
 
         if (textBoxInteraction.mouseClicked(mx, my, editable, pushSnapshot, page)) {
             if (clickCount >= 2 && editable) {
-                int selectedIdx = textBoxInteraction.getSelectedTextBoxIndex();
-                if (selectedIdx >= 0 && selectedIdx < page.nodes.size()) {
-                    var node = page.nodes.get(selectedIdx);
-                    if (node instanceof BookData.TextBoxNode box) {
-                        textBoxInteraction.setEditingText(true);
-                        textBoxCaret.reset();
-                        textBoxCaret.ensureWithinBounds(box);
-                        return EditorMode.TEXT_MODE;
-                    }
+                if (beginTextEditingIfDoubleClick(textBoxInteraction, textBoxCaret, page)) {
+                    return EditorMode.TEXT_MODE;
                 }
             }
             return EditorMode.OBJECT_MODE;
         }
 
         return currentMode;
+    }
+
+    private void updateClickCount() {
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastClickTime < 500) {
+            clickCount++;
+        } else {
+            clickCount = 1;
+        }
+        lastClickTime = currentTime;
+    }
+
+    private boolean handleActiveTextClick(int mx, int my, BookData.Page page,
+                                          TextBoxInteraction textBoxInteraction, TextBoxCaret textBoxCaret,
+                                          TextBoxRenderer textBoxRenderer, TextRenderer textRenderer,
+                                          int contentScreenLeft, int contentScreenTop, double scale, int scrollY) {
+        int selectedIdx = textBoxInteraction.getSelectedTextBoxIndex();
+        if (selectedIdx < 0 || selectedIdx >= page.nodes.size()) return false;
+        var node = page.nodes.get(selectedIdx);
+        if (!(node instanceof BookData.TextBoxNode box)) return false;
+
+        int boxScreenX = contentScreenLeft + (int) Math.round(scale * box.x);
+        int boxScreenY = contentScreenTop + (int) Math.round(scale * (box.y - scrollY));
+        int boxScreenW = (int) Math.round(scale * box.width);
+        int boxScreenH = (int) Math.round(scale * box.height);
+
+        if (mx >= boxScreenX && mx <= boxScreenX + boxScreenW &&
+                my >= boxScreenY && my <= boxScreenY + boxScreenH) {
+            int localX = (int) Math.round((mx - boxScreenX) / scale);
+            int localY = (int) Math.round((my - boxScreenY) / scale);
+            int charIdx = textBoxRenderer.getCharIndexAtPosition(textRenderer, box, localX, localY);
+            textBoxCaret.setCharIndex(charIdx);
+            textBoxCaret.clearSelection();
+            return true;
+        }
+
+        return false;
+    }
+
+    private boolean beginTextEditingIfDoubleClick(TextBoxInteraction textBoxInteraction,
+                                                  TextBoxCaret textBoxCaret, BookData.Page page) {
+        int selectedIdx = textBoxInteraction.getSelectedTextBoxIndex();
+        if (selectedIdx < 0 || selectedIdx >= page.nodes.size()) return false;
+        var node = page.nodes.get(selectedIdx);
+        if (!(node instanceof BookData.TextBoxNode box)) return false;
+        textBoxInteraction.setEditingText(true);
+        textBoxCaret.reset();
+        textBoxCaret.ensureWithinBounds(box);
+        return true;
     }
 
     public boolean handleMouseDrag(int mx, int my, EditorMode mode, boolean editable,

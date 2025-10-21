@@ -40,13 +40,18 @@ public class BookDataSerializerImpl implements IBookDataSerializer {
         BookData d = new BookData();
         try {
             NbtCompound root = stack.getOrCreateNbt();
-            if (!root.contains(BookData.ROOT, NbtElement.COMPOUND_TYPE)) return d;
+            if (!root.contains(BookData.ROOT, NbtElement.COMPOUND_TYPE)) {
+                return d;
+            }
             NbtCompound cb = root.getCompound(BookData.ROOT);
 
             d.title = BookDataUtils.safeString(cb.getString(BookData.TITLE), MAX_TITLE_LEN);
             d.authorName = BookDataUtils.safeString(cb.getString(BookData.AUTHOR_NAME), MAX_AUTHOR_LEN);
             if (cb.contains(BookData.AUTHOR_UUID, NbtElement.STRING_TYPE)) {
-                try { d.authorUuid = UUID.fromString(cb.getString(BookData.AUTHOR_UUID)); } catch (Exception ignored) {}
+                try {
+                    d.authorUuid = UUID.fromString(cb.getString(BookData.AUTHOR_UUID));
+                } catch (Exception ignored) {
+                }
             }
             d.signed = cb.getBoolean(BookData.SIGNED);
 
@@ -79,13 +84,17 @@ public class BookDataSerializerImpl implements IBookDataSerializer {
         NbtCompound cb = new NbtCompound();
         cb.putString(BookData.TITLE, BookDataUtils.safeString(d.title, MAX_TITLE_LEN));
         cb.putString(BookData.AUTHOR_NAME, BookDataUtils.safeString(d.authorName == null ? "" : d.authorName, MAX_AUTHOR_LEN));
-        if (d.authorUuid != null) cb.putString(BookData.AUTHOR_UUID, d.authorUuid.toString());
+        if (d.authorUuid != null) {
+            cb.putString(BookData.AUTHOR_UUID, d.authorUuid.toString());
+        }
         cb.putBoolean(BookData.SIGNED, d.signed);
 
         NbtList pages = new NbtList();
         int added = 0;
         for (BookData.Page p : d.pages) {
-            if (added >= MAX_PAGES) break;
+            if (added >= MAX_PAGES) {
+                break;
+            }
             try {
                 NbtCompound pn = p.toNbt();
                 pages.add(pn);

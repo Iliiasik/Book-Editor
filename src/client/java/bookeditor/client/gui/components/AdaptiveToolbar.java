@@ -105,17 +105,41 @@ public class AdaptiveToolbar {
         res = new ContentSectionBuilder().build(host, editor, onDirty, getCanvasColor, setCanvasColor, openInsertDialog, createNewPage, deleteCurrentPage, signAction, btnH);
         sections.add(res.section);
         Object o;
-        o = res.get("textboxBtn"); if (o instanceof IconButton) textboxBtn = (IconButton)o;
-        o = res.get("imageBtn"); if (o instanceof IconButton) imageBtn = (IconButton)o;
+        o = res.get("textboxBtn");
+        if (o instanceof IconButton) {
+            textboxBtn = (IconButton)o;
+        }
+        o = res.get("imageBtn");
+        if (o instanceof IconButton) {
+            imageBtn = (IconButton)o;
+        }
 
         res = new DrawingToolsSectionBuilder().build(host, editor, onDirty, getCanvasColor, setCanvasColor, openInsertDialog, createNewPage, deleteCurrentPage, signAction, btnH);
         sections.add(res.section);
-        o = res.get("brushBtn"); if (o instanceof IconButton) toolButtonMap.put(DrawingTool.BRUSH, (IconButton)o);
-        o = res.get("sprayBtn"); if (o instanceof IconButton) toolButtonMap.put(DrawingTool.SPRAY, (IconButton)o);
-        o = res.get("lineBtn"); if (o instanceof IconButton) toolButtonMap.put(DrawingTool.LINE, (IconButton)o);
-        o = res.get("rectangleBtn"); if (o instanceof IconButton) toolButtonMap.put(DrawingTool.RECTANGLE, (IconButton)o);
-        o = res.get("circleBtn"); if (o instanceof IconButton) toolButtonMap.put(DrawingTool.CIRCLE, (IconButton)o);
-        o = res.get("eraserBtn"); if (o instanceof IconButton) toolButtonMap.put(DrawingTool.ERASER, (IconButton)o);
+        o = res.get("brushBtn");
+        if (o instanceof IconButton) {
+            toolButtonMap.put(DrawingTool.BRUSH, (IconButton)o);
+        }
+        o = res.get("sprayBtn");
+        if (o instanceof IconButton) {
+            toolButtonMap.put(DrawingTool.SPRAY, (IconButton)o);
+        }
+        o = res.get("lineBtn");
+        if (o instanceof IconButton) {
+            toolButtonMap.put(DrawingTool.LINE, (IconButton)o);
+        }
+        o = res.get("rectangleBtn");
+        if (o instanceof IconButton) {
+            toolButtonMap.put(DrawingTool.RECTANGLE, (IconButton)o);
+        }
+        o = res.get("circleBtn");
+        if (o instanceof IconButton) {
+            toolButtonMap.put(DrawingTool.CIRCLE, (IconButton)o);
+        }
+        o = res.get("eraserBtn");
+        if (o instanceof IconButton) {
+            toolButtonMap.put(DrawingTool.ERASER, (IconButton)o);
+        }
 
         res = new CanvasSectionBuilder().build(host, editor, onDirty, getCanvasColor, setCanvasColor, openInsertDialog, createNewPage, deleteCurrentPage, signAction, btnH);
         sections.add(res.section);
@@ -136,7 +160,9 @@ public class AdaptiveToolbar {
     }
 
     public void setVisible(boolean visible) {
-        if (pager != null) pager.setVisible(visible);
+        if (pager != null) {
+            pager.setVisible(visible);
+        }
     }
 
     public void syncWithEditor() {
@@ -147,7 +173,9 @@ public class AdaptiveToolbar {
     }
 
     private void updateLimitButtons() {
-        if (editor == null) return;
+        if (editor == null) {
+            return;
+        }
         boolean editable = editor.isEditable();
         int nodeCount = editor.getPageNodeCount();
         int strokeCount = editor.getPageStrokeCount();
@@ -158,34 +186,44 @@ public class AdaptiveToolbar {
         var currentTool = editor.getCurrentDrawingTool();
 
         if (textboxBtn != null) {
-            boolean enable = canAddNode || editor.isTextBoxToolActive();
-            textboxBtn.active = enable;
-            if (!enable) textboxBtn.setTooltip(net.minecraft.client.gui.tooltip.Tooltip.of(Text.literal("Node limit reached")));
+            textboxBtn.active = canAddNode || editor.isTextBoxToolActive();
+            if (!textboxBtn.active) {
+                textboxBtn.setTooltip(net.minecraft.client.gui.tooltip.Tooltip.of(Text.literal("Node limit reached")));
+            }
         }
         if (imageBtn != null) {
-            boolean enable = canAddNode;
-            imageBtn.active = enable;
-            if (!enable) imageBtn.setTooltip(net.minecraft.client.gui.tooltip.Tooltip.of(Text.literal("Node limit reached")));
+            imageBtn.active = canAddNode;
+            if (!imageBtn.active) {
+                imageBtn.setTooltip(net.minecraft.client.gui.tooltip.Tooltip.of(Text.literal("Node limit reached")));
+            }
         }
 
         for (Map.Entry<DrawingTool, IconButton> entry : toolButtonMap.entrySet()) {
             IconButton b = entry.getValue();
             DrawingTool dt = entry.getKey();
-            boolean enable = canAddStroke || (currentTool != null && (
-                    (dt == DrawingTool.ERASER && currentTool == DrawingTool.ERASER) ||
-                    (currentTool == dt)
-            ));
-            b.active = enable;
-            if (!enable) b.setTooltip(net.minecraft.client.gui.tooltip.Tooltip.of(Text.literal("Stroke limit reached")));
+            b.active = canAddStroke || (currentTool != null && currentTool == dt);
+            if (!b.active) {
+                b.setTooltip(net.minecraft.client.gui.tooltip.Tooltip.of(Text.literal("Stroke limit reached")));
+            }
         }
     }
 
     public void refreshFormatButtons() {
-        if (boldBtn != null) boldBtn.setSelected(editor.isBold());
-        if (italicBtn != null) italicBtn.setSelected(editor.isItalic());
-        if (underlineBtn != null) underlineBtn.setSelected(editor.isUnderline());
-        if (sizeField != null && sizeField.visible) sizeField.setText(String.format("%.1f", editor.getSize()));
-        if (textColorBtn != null) textColorBtn.setArgb(editor.getColor());
+        if (boldBtn != null) {
+            boldBtn.setSelected(editor.isBold());
+        }
+        if (italicBtn != null) {
+            italicBtn.setSelected(editor.isItalic());
+        }
+        if (underlineBtn != null) {
+            underlineBtn.setSelected(editor.isUnderline());
+        }
+        if (sizeField != null && sizeField.visible) {
+            sizeField.setText(String.format("%.1f", editor.getSize()));
+        }
+        if (textColorBtn != null) {
+            textColorBtn.setArgb(editor.getColor());
+        }
     }
 
     public void updateCanvasColor(int color) {

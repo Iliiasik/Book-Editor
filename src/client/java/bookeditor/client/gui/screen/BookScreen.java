@@ -298,50 +298,7 @@ public class BookScreen extends Screen implements WidgetHost {
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (!data.signed && hasControlDown()) {
-            if (keyCode == GLFW.GLFW_KEY_N) {
-                boolean shift = (modifiers & GLFW.GLFW_MOD_SHIFT) != 0;
-                if (shift) {
-                    this.debugNbtOverlay = !this.debugNbtOverlay;
-                    return true;
-                }
-            }
-            if (keyCode == GLFW.GLFW_KEY_B) {
-                editor.setBold(!editor.isBold());
-                editor.applyStyleToSelection();
-                toolbar.refreshFormatButtons();
-                onDirty();
-                return true;
-            } else if (keyCode == GLFW.GLFW_KEY_I) {
-                editor.setItalic(!editor.isItalic());
-                editor.applyStyleToSelection();
-                toolbar.refreshFormatButtons();
-                onDirty();
-                return true;
-            } else if (keyCode == GLFW.GLFW_KEY_U) {
-                editor.setUnderline(!editor.isUnderline());
-                editor.applyStyleToSelection();
-                toolbar.refreshFormatButtons();
-                onDirty();
-                return true;
-            } else if (keyCode == GLFW.GLFW_KEY_Z) {
-                if (editor.undo()) onDirty();
-                return true;
-            } else if (keyCode == GLFW.GLFW_KEY_Y) {
-                if (editor.redo()) onDirty();
-                return true;
-            } else if (keyCode == GLFW.GLFW_KEY_C) {
-                editor.copySelection();
-                return true;
-            } else if (keyCode == GLFW.GLFW_KEY_V) {
-                editor.paste();
-                onDirty();
-                return true;
-            } else if (keyCode == GLFW.GLFW_KEY_X) {
-                editor.cutSelection();
-                onDirty();
-                return true;
-            } else if (keyCode == GLFW.GLFW_KEY_A) {
-                editor.selectAll();
+            if (handleControlShortcuts(keyCode, modifiers)) {
                 return true;
             }
         }
@@ -350,6 +307,102 @@ public class BookScreen extends Screen implements WidgetHost {
             return true;
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    private boolean handleControlShortcuts(int keyCode, int modifiers) {
+        if (keyCode == GLFW.GLFW_KEY_N) {
+            boolean shift = (modifiers & GLFW.GLFW_MOD_SHIFT) != 0;
+            if (shift) {
+                this.debugNbtOverlay = !this.debugNbtOverlay;
+                return true;
+            }
+            return false;
+        }
+        switch (keyCode) {
+            case GLFW.GLFW_KEY_B:
+                toggleBold();
+                return true;
+            case GLFW.GLFW_KEY_I:
+                toggleItalic();
+                return true;
+            case GLFW.GLFW_KEY_U:
+                toggleUnderline();
+                return true;
+            case GLFW.GLFW_KEY_Z:
+                if (tryUndo()) onDirty();
+                return true;
+            case GLFW.GLFW_KEY_Y:
+                if (tryRedo()) onDirty();
+                return true;
+            case GLFW.GLFW_KEY_C:
+                performCopy();
+                return true;
+            case GLFW.GLFW_KEY_V:
+                performPaste();
+                onDirty();
+                return true;
+            case GLFW.GLFW_KEY_X:
+                performCut();
+                onDirty();
+                return true;
+            case GLFW.GLFW_KEY_A:
+                performSelectAll();
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private void toggleBold() {
+        if (editor == null) return;
+        editor.setBold(!editor.isBold());
+        editor.applyStyleToSelection();
+        if (toolbar != null) toolbar.refreshFormatButtons();
+        onDirty();
+    }
+
+    private void toggleItalic() {
+        if (editor == null) return;
+        editor.setItalic(!editor.isItalic());
+        editor.applyStyleToSelection();
+        if (toolbar != null) toolbar.refreshFormatButtons();
+        onDirty();
+    }
+
+    private void toggleUnderline() {
+        if (editor == null) return;
+        editor.setUnderline(!editor.isUnderline());
+        editor.applyStyleToSelection();
+        if (toolbar != null) toolbar.refreshFormatButtons();
+        onDirty();
+    }
+
+    private boolean tryUndo() {
+        return editor != null && editor.undo();
+    }
+
+    private boolean tryRedo() {
+        return editor != null && editor.redo();
+    }
+
+    private void performCopy() {
+        if (editor == null) return;
+        editor.copySelection();
+    }
+
+    private void performPaste() {
+        if (editor == null) return;
+        editor.paste();
+    }
+
+    private void performCut() {
+        if (editor == null) return;
+        editor.cutSelection();
+    }
+
+    private void performSelectAll() {
+        if (editor == null) return;
+        editor.selectAll();
     }
 
     @Override

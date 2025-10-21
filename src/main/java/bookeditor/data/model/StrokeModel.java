@@ -12,7 +12,15 @@ public class StrokeModel {
     public int thickness = 2;
     public final List<Point> points = new ArrayList<>();
 
-    public static class Point { public int x,y; public Point(int x,int y){this.x=x;this.y=y;} }
+    public static class Point {
+        public int x;
+        public int y;
+
+        public Point(int x, int y) {
+            this.x = x;
+            this.y = y;
+        }
+    }
 
     public NbtCompound toNbt() {
         NbtCompound c = new NbtCompound();
@@ -31,8 +39,12 @@ public class StrokeModel {
 
     public static StrokeModel fromNbt(NbtCompound c) {
         StrokeModel s = new StrokeModel();
-        if (c.contains("color", NbtElement.INT_TYPE)) s.color = c.getInt("color");
-        if (c.contains("thickness", NbtElement.INT_TYPE)) s.thickness = c.getInt("thickness");
+        if (c.contains("color", NbtElement.INT_TYPE)) {
+            s.color = c.getInt("color");
+        }
+        if (c.contains("thickness", NbtElement.INT_TYPE)) {
+            s.thickness = c.getInt("thickness");
+        }
         NbtList pts = c.getList("points", NbtElement.COMPOUND_TYPE);
         for (int i = 0; i < pts.size(); i++) {
             NbtCompound pc = pts.getCompound(i);
