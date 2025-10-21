@@ -22,7 +22,10 @@ public class ImageNodeModel extends NodeModel {
         this.gif = gif;
     }
 
-    @Override public String type() { return "image"; }
+    @Override
+    public String type() {
+        return "image";
+    }
 
     @Override
     public NbtCompound toNbt() {

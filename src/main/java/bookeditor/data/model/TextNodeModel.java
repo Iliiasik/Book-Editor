@@ -23,7 +23,10 @@ public class TextNodeModel extends NodeModel {
         this.align = align;
     }
 
-    @Override public String type() { return "text"; }
+    @Override
+    public String type() {
+        return "text";
+    }
 
     @Override
     public NbtCompound toNbt() {

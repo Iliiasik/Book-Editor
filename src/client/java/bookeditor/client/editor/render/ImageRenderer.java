@@ -16,7 +16,9 @@ public class ImageRenderer {
                        double scale,
                        int logicalW,
                        int logicalH) {
-        if (page == null) return;
+        if (page == null) {
+            return;
+        }
 
         for (int i = 0; i < page.nodes.size(); i++) {
             BookData.Node n = page.nodes.get(i);
@@ -31,8 +33,11 @@ public class ImageRenderer {
                 int sw = Math.max(1, (int)Math.round(scale * drawW));
                 int sh = Math.max(1, (int)Math.round(scale * drawH));
                 if (imgY < (canvasScreenTop + (int)Math.floor(scale * (logicalH + 8*2))) && imgY + sh > canvasScreenTop) {
-                    if (texReady) ctx.drawTexture(tex, imgX, imgY, 0, 0, sw, sh, sw, sh);
-                    else { ctx.fill(imgX, imgY, imgX + sw, imgY + sh, 0xFFCCCCCC); }
+                    if (texReady) {
+                        ctx.drawTexture(tex, imgX, imgY, 0, 0, sw, sh, sw, sh);
+                    } else {
+                        ctx.fill(imgX, imgY, imgX + sw, imgY + sh, 0xFFCCCCCC);
+                    }
                 }
                 imageInteraction.addImageRect(imgX, imgY, sw, sh, i);
             }

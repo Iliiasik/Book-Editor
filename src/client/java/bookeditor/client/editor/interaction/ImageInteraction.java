@@ -7,16 +7,25 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ImageInteraction {
-    public static class Rect { public int x,y,w,h,nodeIndex; }
+    public static class Rect {
+        public int x;
+        public int y;
+        public int w;
+        public int h;
+        public int nodeIndex;
+    }
 
     private final List<Rect> imageRects = new ArrayList<>();
     private int selectedImageIndex = -1;
     private int resizingHandle = -1;
     private boolean draggingImage = false;
 
-    private int dragStartMouseX, dragStartMouseY;
-    private int dragStartW, dragStartH;
-    private int dragStartImgX, dragStartImgY;
+    private int dragStartMouseX;
+    private int dragStartMouseY;
+    private int dragStartW;
+    private int dragStartH;
+    private int dragStartImgX;
+    private int dragStartImgY;
 
     public void beginFrame() {
         imageRects.clear();
@@ -24,7 +33,11 @@ public class ImageInteraction {
 
     public void addImageRect(int x, int y, int w, int h, int nodeIndex) {
         Rect r = new Rect();
-        r.x = x; r.y = y; r.w = w; r.h = h; r.nodeIndex = nodeIndex;
+        r.x = x;
+        r.y = y;
+        r.w = w;
+        r.h = h;
+        r.nodeIndex = nodeIndex;
         imageRects.add(r);
     }
 
@@ -35,14 +48,28 @@ public class ImageInteraction {
     }
 
     public boolean mouseClicked(int mx, int my, boolean editable, Runnable pushSnapshotOnce, BookData.Page page) {
-        if (page == null) return false;
+        if (page == null) {
+            return false;
+        }
 
         for (int i = imageRects.size() - 1; i >= 0; i--) {
             Rect r = imageRects.get(i);
-            if (editable && inside(mx, my, r.x - 2, r.y - 2, 8, 8)) { select(page, r.nodeIndex, 0, mx, my, pushSnapshotOnce); return true; }
-            if (editable && inside(mx, my, r.x + r.w - 6, r.y - 2, 8, 8)) { select(page, r.nodeIndex, 1, mx, my, pushSnapshotOnce); return true; }
-            if (editable && inside(mx, my, r.x - 2, r.y + r.h - 6, 8, 8)) { select(page, r.nodeIndex, 2, mx, my, pushSnapshotOnce); return true; }
-            if (editable && inside(mx, my, r.x + r.w - 6, r.y + r.h - 6, 8, 8)) { select(page, r.nodeIndex, 3, mx, my, pushSnapshotOnce); return true; }
+            if (editable && inside(mx, my, r.x - 2, r.y - 2, 8, 8)) {
+                select(page, r.nodeIndex, 0, mx, my, pushSnapshotOnce);
+                return true;
+            }
+            if (editable && inside(mx, my, r.x + r.w - 6, r.y - 2, 8, 8)) {
+                select(page, r.nodeIndex, 1, mx, my, pushSnapshotOnce);
+                return true;
+            }
+            if (editable && inside(mx, my, r.x - 2, r.y + r.h - 6, 8, 8)) {
+                select(page, r.nodeIndex, 2, mx, my, pushSnapshotOnce);
+                return true;
+            }
+            if (editable && inside(mx, my, r.x + r.w - 6, r.y + r.h - 6, 8, 8)) {
+                select(page, r.nodeIndex, 3, mx, my, pushSnapshotOnce);
+                return true;
+            }
             if (inside(mx, my, r.x, r.y, r.w, r.h)) {
                 selectedImageIndex = r.nodeIndex;
                 if (editable) {
@@ -63,10 +90,16 @@ public class ImageInteraction {
     }
 
     public boolean mouseDragged(int mx, int my, boolean editable, double scale, BookData.Page page) {
-        if (!editable || page == null) return false;
-        if (selectedImageIndex < 0 || selectedImageIndex >= page.nodes.size()) return false;
+        if (!editable || page == null) {
+            return false;
+        }
+        if (selectedImageIndex < 0 || selectedImageIndex >= page.nodes.size()) {
+            return false;
+        }
         var n = page.nodes.get(selectedImageIndex);
-        if (!(n instanceof BookData.ImageNode img)) return false;
+        if (!(n instanceof BookData.ImageNode img)) {
+            return false;
+        }
 
         int dxl = (int)Math.round((mx - dragStartMouseX) / scale);
         int dyl = (int)Math.round((my - dragStartMouseY) / scale);
@@ -84,34 +117,54 @@ public class ImageInteraction {
                     int bottom = dragStartImgY + dragStartH;
                     newX = right - newW;
                     newY = bottom - newH;
-                    if (newX < 0) { newW += newX; newX = 0; }
-                    if (newY < 0) { newH += newY; newY = 0; }
+                    if (newX < 0) {
+                        newW += newX;
+                        newX = 0;
+                    }
+                    if (newY < 0) {
+                        newH += newY;
+                        newY = 0;
+                    }
                 }
                 case 1 -> {
                     newW = Math.max(8, dragStartW + dxl);
                     newH = Math.max(8, dragStartH - dyl);
                     int bottom = dragStartImgY + dragStartH;
                     newY = bottom - newH;
-                    if (newY < 0) { newH += newY; newY = 0; }
+                    if (newY < 0) {
+                        newH += newY;
+                        newY = 0;
+                    }
                 }
                 case 2 -> {
                     newW = Math.max(8, dragStartW - dxl);
                     newH = Math.max(8, dragStartH + dyl);
                     int right = dragStartImgX + dragStartW;
                     newX = right - newW;
-                    if (newX < 0) { newW += newX; newX = 0; }
+                    if (newX < 0) {
+                        newW += newX;
+                        newX = 0;
+                    }
                 }
                 case 3 -> {
                     newW = Math.max(8, dragStartW + dxl);
                     newH = Math.max(8, dragStartH + dyl);
                 }
             }
-            if (newX + newW > 960) newW = 960 - newX;
-            if (newY + newH > 600) newH = 600 - newY;
+            if (newX + newW > 960) {
+                newW = 960 - newX;
+            }
+            if (newY + newH > 600) {
+                newH = 600 - newY;
+            }
             img.w = Math.max(8, newW);
             img.h = Math.max(8, newH);
-            if (resizingHandle == 0 || resizingHandle == 2) img.x = Math.max(0, newX);
-            if (resizingHandle == 0 || resizingHandle == 1) img.y = Math.max(0, newY);
+            if (resizingHandle == 0 || resizingHandle == 2) {
+                img.x = newX;
+            }
+            if (resizingHandle == 0 || resizingHandle == 1) {
+                img.y = newY;
+            }
             return true;
         } else if (draggingImage) {
             int newX = dragStartImgX + dxl;
@@ -127,16 +180,27 @@ public class ImageInteraction {
 
     public boolean mouseReleased() {
         boolean changed = false;
-        if (resizingHandle >= 0) { resizingHandle = -1; changed = true; }
-        if (draggingImage) { draggingImage = false; changed = true; }
+        if (resizingHandle >= 0) {
+            resizingHandle = -1;
+            changed = true;
+        }
+        if (draggingImage) {
+            draggingImage = false;
+            changed = true;
+        }
         return changed;
     }
 
     public void renderSelectionHandles(DrawContext ctx) {
-        if (selectedImageIndex < 0) return;
+        if (selectedImageIndex < 0) {
+            return;
+        }
         Rect r = null;
         for (int i = imageRects.size() - 1; i >= 0; i--) {
-            if (imageRects.get(i).nodeIndex == selectedImageIndex) { r = imageRects.get(i); break; }
+            if (imageRects.get(i).nodeIndex == selectedImageIndex) {
+                r = imageRects.get(i);
+                break;
+            }
         }
         if (r != null) {
             ctx.fill(r.x - 1, r.y - 1, r.x + r.w + 1, r.y + r.h + 1, 0x8800A0FF);
@@ -174,7 +238,9 @@ public class ImageInteraction {
     }
 
     public void deleteSelectedIfImage(BookData.Page page) {
-        if (page == null) return;
+        if (page == null) {
+            return;
+        }
         if (selectedImageIndex >= 0 && selectedImageIndex < page.nodes.size()
                 && page.nodes.get(selectedImageIndex) instanceof BookData.ImageNode) {
             page.nodes.remove(selectedImageIndex);
